@@ -492,7 +492,7 @@ main{padding:4px 0 110px;min-height:60vh}
       <p style="margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.5">Without a token, “Check listings” opens Discogs &amp; eBay searches. With one, Stacks checks live vinyl listings for wanted records and pops a notification when it finds any.</p>
       <button class="btn" id="seedBtn">Load sample records</button>
       <button class="btn" id="artBulkBtn" style="margin-left:8px">🖼 Fetch all missing covers</button>
-      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers from the iTunes catalog for every record that doesn't have one yet. For a large library this can take a few minutes — keep the app open while it runs. You can run it again any time to retry any that weren't found.</p>
+      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers for every record that doesn't have one yet — from the iTunes catalog first, then Discogs for anything iTunes can't match. For a large library this can take a few minutes — keep the app open while it runs. Adding a Discogs token below makes the Discogs step faster. You can run it again any time to retry any that weren't found.</p>
     </div>
   </div>
 </div>
@@ -792,7 +792,7 @@ $("#confirmYes").onclick=()=>closeConfirm(true);
 $("#confirmNo").onclick=()=>closeConfirm(false);
 $("#confirmScrim").addEventListener("click",e=>{if(e.target.id==="confirmScrim")closeConfirm(false)});
 
-/* ============ cover art — iTunes Search API (free, no key, via JSONP) ============ */
+/* ============ cover art — iTunes (primary, JSONP) + Discogs (fallback) ============ */
 function jsonp(url){return new Promise((res,rej)=>{const cb="itart_"+Math.random().toString(36).slice(2);let done=false;
   const s=document.createElement("script");
   const to=setTimeout(()=>{if(!done){cleanup();rej(new Error("timeout"))}},9000);
@@ -806,25 +806,51 @@ async function fetchArtURL(artist,title){
   const r=((d&&d.results)||[])[0];if(!r||!r.artworkUrl100)return null;
   return r.artworkUrl100.replace(/\/\d+x\d+bb\.(jpg|png|jpeg)/,"/600x600bb.$1");
 }
+/* Discogs cover — fallback for titles iTunes can't match. Works without a token
+   (search → release → image); a Discogs token (Library tools) makes it 1 call & faster. */
+async function discogsArtURL(artist,title){
+  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return null;
+  const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
+  try{
+    const s=await fetch(`https://api.discogs.com/database/search?q=${term}&type=release&format=Vinyl&per_page=3${tk}`).then(x=>x.ok?x.json():null);
+    const hit=((s&&s.results)||[])[0];if(!hit)return null;
+    if(hit.cover_image)return hit.cover_image;          // present only on authenticated search
+    if(!hit.id)return null;
+    const rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null);
+    const imgs=(rel&&rel.images)||[];const pick=imgs.find(im=>im.type==="primary")||imgs[0];
+    return pick&&pick.uri?pick.uri:null;
+  }catch(e){return null}
+}
+/* resolve a cover: iTunes first (fast, free), then Discogs */
+async function findCover(artist,title){
+  let u=null;try{u=await fetchArtURL(artist,title)}catch(e){}
+  if(u)return u;
+  try{u=await discogsArtURL(artist,title)}catch(e){}
+  return u||null;
+}
 async function getArt(id){const r=records.find(x=>x.id===id);if(!r)return;toast("Searching cover art…");
-  try{const url=await fetchArtURL(r.artist,r.title);if(!url){toast("No cover art found for that title");return}
+  try{const url=await findCover(r.artist,r.title);if(!url){toast("No cover art found for that title");return}
     r.art=url;await dbPut(r);renderAll();openDetail(id);toast("Cover art added")}
   catch(e){toast("Couldn't reach the art service — try again")}}
 async function findArtForForm(){
   const a=$("#f-artist").value.trim(),t=$("#f-title").value.trim();
   if(!a&&!t){toast("Enter an artist or title first");return}
   const b=$("#findArtBtn"),old=b.innerHTML;b.innerHTML='<span class="spin-mini"></span> Searching…';b.disabled=true;
-  try{const url=await fetchArtURL(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
+  try{const url=await findCover(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
   catch(e){toast("Couldn't reach the art service")}finally{b.innerHTML=old;b.disabled=false}}
 async function fetchArtBulk(){
   const list=records.filter(r=>!r.photo&&!r.art&&(r.artist||r.title));
   if(!list.length){toast("Every record already has artwork");return}
-  hideAll();const total=list.length;let n=0,i=0;
+  hideAll();const total=list.length;let n=0,i=0,dg=0;
   for(const r of list){i++;toast(`Fetching covers… ${i}/${total} — ${n} found`);
-    try{const url=await fetchArtURL(r.artist,r.title);if(url){r.art=url;await dbPut(r);n++;if(n%6===0)renderLibrary()}}catch(e){}
+    let url=null;
+    try{url=await fetchArtURL(r.artist,r.title)}catch(e){}                 // iTunes (fast)
+    if(!url){try{url=await discogsArtURL(r.artist,r.title)}catch(e){}if(url)dg++;
+      await new Promise(s=>setTimeout(s,settings.discogsToken?1500:5000))} // Discogs rate limits: pace it
+    if(url){r.art=url;await dbPut(r);n++;if(n%6===0)renderLibrary()}
     await new Promise(s=>setTimeout(s,350))}
-  renderAll();const miss=total-n;
-  toast(miss?`Added ${n} covers — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records`)}
+  renderAll();const miss=total-n,via=dg?` (${dg} via Discogs)`:"";
+  toast(miss?`Added ${n} covers${via} — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records${via}`)}
 
 /* ============ events ============ */
 document.addEventListener("click",e=>{

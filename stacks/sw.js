@@ -1,5 +1,5 @@
 /* Stacks service worker — offline app shell */
-const CACHE = "stacks-v2";
+const CACHE = "stacks-v3";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-512-mask.png"];
 
 self.addEventListener("install", e => {
