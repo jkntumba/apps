@@ -56,6 +56,7 @@ a{color:var(--amber);text-decoration:none}
 
 /* ----------------------------------------------------- header */
 header.top{position:sticky;top:0;z-index:40;
+  padding-top:env(safe-area-inset-top);
   background:linear-gradient(var(--bg) 35%, rgba(20,16,14,.82));backdrop-filter:blur(14px) saturate(1.2);
   border-bottom:1px solid var(--line)}
 .topinner{display:flex;align-items:center;gap:16px;padding:15px 0}
@@ -490,8 +491,8 @@ main{padding:4px 0 110px;min-height:60vh}
       <div class="field"><label for="discogsToken">Discogs token (optional — live listing checks)</label><input id="discogsToken" placeholder="paste personal access token"></div>
       <p style="margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.5">Without a token, “Check listings” opens Discogs &amp; eBay searches. With one, Stacks checks live vinyl listings for wanted records and pops a notification when it finds any.</p>
       <button class="btn" id="seedBtn">Load sample records</button>
-      <button class="btn" id="artBulkBtn" style="margin-left:8px">🖼 Fetch cover art (visible)</button>
-      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers from the iTunes catalog for the records currently shown (up to 40 at a time). Tip: filter to one artist first, then fetch.</p>
+      <button class="btn" id="artBulkBtn" style="margin-left:8px">🖼 Fetch all missing covers</button>
+      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers from the iTunes catalog for every record that doesn't have one yet. For a large library this can take a few minutes — keep the app open while it runs. You can run it again any time to retry any that weren't found.</p>
     </div>
   </div>
 </div>
@@ -816,12 +817,14 @@ async function findArtForForm(){
   try{const url=await fetchArtURL(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
   catch(e){toast("Couldn't reach the art service")}finally{b.innerHTML=old;b.disabled=false}}
 async function fetchArtBulk(){
-  const list=visible().filter(r=>!r.photo&&!r.art).slice(0,40);
-  if(!list.length){toast("Everything shown already has artwork");return}
-  hideAll();toast(`Fetching cover art for ${list.length}…`);let n=0;
-  for(const r of list){try{const url=await fetchArtURL(r.artist,r.title);if(url){r.art=url;await dbPut(r);n++;if(n%4===0)renderLibrary()}}catch(e){}
+  const list=records.filter(r=>!r.photo&&!r.art&&(r.artist||r.title));
+  if(!list.length){toast("Every record already has artwork");return}
+  hideAll();const total=list.length;let n=0,i=0;
+  for(const r of list){i++;toast(`Fetching covers… ${i}/${total} — ${n} found`);
+    try{const url=await fetchArtURL(r.artist,r.title);if(url){r.art=url;await dbPut(r);n++;if(n%6===0)renderLibrary()}}catch(e){}
     await new Promise(s=>setTimeout(s,350))}
-  renderAll();toast(`Added cover art to ${n} record${n!==1?"s":""}`)}
+  renderAll();const miss=total-n;
+  toast(miss?`Added ${n} covers — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records`)}
 
 /* ============ events ============ */
 document.addEventListener("click",e=>{
