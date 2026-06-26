@@ -400,6 +400,17 @@ main{padding:4px 0 110px;min-height:60vh}
 .scanwrap video{width:100%;height:100%;object-fit:cover;display:block}
 .scanwrap .reticle{position:absolute;left:12%;right:12%;top:38%;height:24%;border:2px solid var(--amber);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
 .icn{width:1em;height:1em;flex:none;vertical-align:-2px}
+/* tap-to-enlarge cover lightbox */
+.lightbox{position:fixed;inset:0;z-index:95;background:rgba(8,6,4,.93);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;animation:fade .18s}
+.lightbox[hidden]{display:none}
+.lightbox img{max-width:96vw;max-height:92vh;border-radius:10px;box-shadow:var(--shadow);object-fit:contain}
+.cover-lean img{cursor:zoom-in}
+/* audio sample control on the deck */
+.tsound{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink-2);transition:.15s}
+.tsound:hover{border-color:var(--amber-deep);color:var(--ink)}
+.tsound.on{background:linear-gradient(180deg,var(--amber-2),var(--amber-deep));color:#1a1206;border-color:transparent}
+.tsound.loading{opacity:.6;pointer-events:none}
+#nowPlaying{color:var(--amber)}
 @media(max-width:560px){
   .install{left:12px;right:12px;bottom:12px;transform:none;max-width:none;border-radius:14px}
   .install .t{flex:1;min-width:0}
@@ -617,6 +628,7 @@ main{padding:4px 0 110px;min-height:60vh}
     <div class="cbtns" id="confirmBtns"></div>
   </div>
 </div>
+<div class="lightbox" id="lightbox" hidden><img id="lightboxImg" alt="Cover — tap to close"></div>
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <div class="bulkpanel" id="bulkPanel" hidden>
   <div class="bp-top"><span id="bulkText">Fetching covers…</span><button class="btn" id="bulkCancelBtn">Cancel</button></div>
@@ -797,12 +809,12 @@ const ICONS={
 };
 function ic(n){return `<svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${ICONS[n]||""}</svg>`}
 function openDetail(id){
-  const r=records.find(x=>x.id===id);if(!r)return;detailId=id;
+  const r=records.find(x=>x.id===id);if(!r)return;stopAudio();detailId=id;
   // count a "spin" when you put a record on — debounced so quick re-opens don't inflate it
   const now=Date.now();if(now-(r.lastPlayed||0)>60000){r.spins=(r.spins||0)+1;r.lastPlayed=now;dbPut(r).catch(()=>{})}
   const s=sleeve(r);
   const _src=r.photo||r.art;
-  const sleeveArt=_src?`<img src="${esc(_src)}" loading="lazy" decoding="async" data-cover="${r.id}" alt="" style="width:100%;border-radius:8px;border:1px solid var(--line-2)">`
+  const sleeveArt=_src?`<img src="${esc(_src)}" loading="lazy" decoding="async" data-cover="${r.id}" alt="" title="Tap to enlarge" style="width:100%;border-radius:8px;border:1px solid var(--line-2)">`
     :`<div class="gen" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line-2);background:linear-gradient(150deg,${s.c1},${s.c2});color:${s.ink}"><div class="ring"></div><div class="ga">${esc(r.artist)}</div><div class="gt">${esc(r.title)}</div></div>`;
   const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.variant&&["Pressing",esc(r.variant)],
     r.label&&["Label",esc(r.label)],r.catalog&&["Catalog",`<span style="font-family:var(--mono)">${esc(r.catalog)}</span>`],
@@ -820,7 +832,8 @@ function openDetail(id){
       </div>
       <div class="deckbase">
         <button class="power" id="ttPower" aria-label="Pause" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" id="ttIcon" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-        <div class="rpm">33<b>⅓</b> RPM · <span id="ttState">spinning</span></div>
+        <button class="tsound" id="ttSound" aria-label="Play a 30-second sample" aria-pressed="false" title="Play a 30-second sample (Apple Music preview)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg></button>
+        <div class="rpm">33<b>⅓</b> RPM · <span id="ttState">spinning</span><span id="nowPlaying"></span></div>
       </div>
     </div>
     <div class="info">
@@ -847,6 +860,8 @@ function openDetail(id){
     $("#ttIcon").innerHTML=on?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>':'<path d="M8 5v14l11-7z"/>';
     pw.setAttribute("aria-label",on?"Pause":"Play");pw.setAttribute("aria-pressed",String(on));
     $("#ttState").textContent=on?"spinning":"paused"};
+  const sb=$("#ttSound");if(sb)sb.onclick=toggleSound;
+  const cl=$("#detailBody .cover-lean img");if(cl)cl.onclick=()=>openLightbox(cl.src);
 }
 async function toggleStatus(id){const r=records.find(x=>x.id===id);if(!r)return;const prev=r.status;r.status=prev==="owned"?"wishlist":"owned";
   try{await dbPut(r)}catch(e){r.status=prev;storageErr(e);return}renderAll();openDetail(id);toast(r.status==="owned"?"Filed on the shelf":"Moved to wanted")}
@@ -1003,7 +1018,7 @@ function focusables(el){return [...el.querySelectorAll('a[href],button:not([disa
 function show(sel){if($$(".scrim").every(s=>s.hidden))_lastFocus=document.activeElement; /* remember the trigger only when opening from no modal */
   $$(".scrim").forEach(s=>{if("#"+s.id!==sel)s.hidden=true});const sc=$(sel);sc.hidden=false;document.body.style.overflow="hidden";
   setTimeout(()=>{const f=focusables(sc);if(f.length)f[0].focus()},60)}
-function hideAll(){stopScan();$$(".scrim").forEach(s=>s.hidden=true);document.body.style.overflow="";
+function hideAll(){stopScan();stopAudio();$$(".scrim").forEach(s=>s.hidden=true);document.body.style.overflow="";
   if(_lastFocus&&_lastFocus.focus){try{_lastFocus.focus()}catch(e){}}_lastFocus=null}
 function toast(m,action){const t=$("#toast");t.textContent=m;
   if(action){const b=document.createElement("button");b.className="toast-act";b.type="button";b.textContent=action.label;b.onclick=()=>{t.classList.remove("show");clearTimeout(t._t);action.fn()};t.appendChild(b)}
@@ -1048,54 +1063,97 @@ function _artistMatch(want,got){
 }
 /* iTunes cover — fast & free, but its ranking is popularity-weighted, so verify the
    artist actually matches before trusting it (this is what caused wrong covers before). */
-async function fetchArtURL(artist,title){
-  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return null;
-  const d=await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=5`);
-  const results=(d&&d.results)||[];if(!results.length)return null;
-  const r=artist?results.find(x=>_artistMatch(artist,x.artistName)):results[0];
-  if(!r||!r.artworkUrl100)return null;        // no artist match → let Discogs try instead
-  return r.artworkUrl100.replace(/\/\d+x\d+bb\.(jpg|png|jpeg)/,"/600x600bb.$1");
-}
-/* Discogs cover — vinyl-specific & verifiable. Works without a token (search → release →
-   image; 25/min); a token (Library tools) returns the image in the search itself (1 call, 60/min). */
-async function discogsArtURL(artist,title){
-  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return null;
+/* ---- cover resolution: cross-validate iTunes + Discogs on artist + title ----
+   The old bug: each source would fall back to its top result even when the artist
+   didn't match (Discogs "results[0]"), so a token user could get a totally different
+   artist. Now: artist MUST match, title must overlap, and covers both sources agree on win. */
+const MIN_SIM=0.34, STRONG_SIM=0.6;
+function titleSim(a,b){const x=_norm(a),y=_norm(b);if(!x||!y)return 0;if(x===y)return 1;
+  const A=new Set(x.split(" ").filter(Boolean)),B=new Set(y.split(" ").filter(Boolean));
+  let inter=0;A.forEach(t=>{if(B.has(t))inter++});const uni=new Set([...A,...B]).size;return uni?inter/uni:0}
+function matchScore(qa,qt,ca,ct){
+  if(qa&&!_artistMatch(qa,ca))return 0;          // artist must match — kills wrong-artist covers
+  const t=qt?titleSim(qt,ct):0.5;
+  if(qa&&qt&&t<MIN_SIM)return 0;                  // and the album title has to overlap when both given
+  return 1+t}
+async function itunesCandidates(artist,title){
+  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return [];
+  let d=null;try{d=await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=8`)}catch(e){return []}
+  return ((d&&d.results)||[]).filter(x=>x.artworkUrl100).map(x=>({via:"itunes",artist:x.artistName||"",title:x.collectionName||"",
+    cover:x.artworkUrl100.replace(/\/\d+x\d+bb\.(jpg|png|jpeg)/,"/600x600bb.$1"),collectionId:x.collectionId}))}
+async function discogsCandidates(artist,title){
+  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return [];
   const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
-  try{
-    const s=await fetch(`https://api.discogs.com/database/search?q=${term}&type=release&format=Vinyl&per_page=5${tk}`).then(x=>x.ok?x.json():null);
-    const results=(s&&s.results)||[];if(!results.length)return null;
-    // each result title is "Artist - Title"; prefer one whose artist matches, else the top hit
-    const hit=(artist&&results.find(x=>_artistMatch(artist,(x.title||"").split(" - ")[0])))||results[0];
-    if(hit.cover_image)return hit.cover_image;          // populated only on token search
-    if(!hit.id)return null;
-    const rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null);
-    const imgs=(rel&&rel.images)||[];const pick=imgs.find(im=>im.type==="primary")||imgs[0];
-    return pick&&pick.uri?pick.uri:null;
-  }catch(e){return null}
+  let s=null;try{s=await fetch(`https://api.discogs.com/database/search?q=${term}&type=release&format=Vinyl&per_page=8${tk}`).then(x=>x.ok?x.json():null)}catch(e){return []}
+  return ((s&&s.results)||[]).map(x=>{const p=(x.title||"").split(" - ");
+    return {via:"discogs",artist:(p[0]||"").trim(),title:(p.slice(1).join(" - ")||p[0]||"").trim(),cover:x.cover_image||"",id:x.id}})}
+async function discogsReleaseImage(id){if(!id)return null;
+  const tk=settings.discogsToken?("?token="+encodeURIComponent(settings.discogsToken)):"";
+  let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${id}${tk}`).then(x=>x.ok?x.json():null)}catch(e){return null}
+  const imgs=(rel&&rel.images)||[],pick=imgs.find(im=>im.type==="primary")||imgs[0];return pick&&pick.uri?pick.uri:null}
+function corroborated(c,others){return others.some(o=>_artistMatch(c.artist,o.artist)&&titleSim(c.title,o.title)>=0.5)}
+/* returns {url, via, usedDiscogs}; never a non-matching cover. opts.source limits to one provider. */
+async function resolveCover(artist,title,opts){
+  opts=opts||{};let usedDiscogs=false,it=[],dg=[];
+  if(opts.source!=="discogs"){it=await itunesCandidates(artist,title);it.forEach(c=>c.score=matchScore(artist,title,c.artist,c.title))}
+  const itGood=it.filter(c=>c.score>0&&c.cover).sort((a,b)=>b.score-a.score);
+  // fast path: a confident iTunes match → use it and skip Discogs (keeps bulk quick & correct)
+  if(opts.source!=="discogs"&&itGood[0]&&(!title||titleSim(title,itGood[0].title)>=STRONG_SIM))
+    return {url:itGood[0].cover,via:"itunes",usedDiscogs};
+  if(opts.source!=="itunes"){usedDiscogs=true;dg=await discogsCandidates(artist,title);dg.forEach(c=>c.score=matchScore(artist,title,c.artist,c.title))}
+  const all=[...itGood,...dg.filter(c=>c.score>0)];
+  if(!all.length)return {url:null,via:null,usedDiscogs};
+  all.forEach(c=>{if(corroborated(c,c.via==="itunes"?dg:it))c.score+=0.6}); // agreement = trust
+  all.sort((a,b)=>b.score-a.score);
+  for(const c of all){let cover=c.cover;if(!cover&&c.via==="discogs")cover=await discogsReleaseImage(c.id);
+    if(cover)return {url:cover,via:c.via,usedDiscogs}}
+  return {url:null,via:null,usedDiscogs};
 }
-/* resolve a cover. With a token saved, Discogs is the most vinyl-accurate, so go there
-   first; otherwise iTunes first (fast, free, now artist-verified) then Discogs.
-   Returns {url, via} so callers can pace Discogs' rate limit correctly. */
-async function findCover(artist,title){
-  const order=settings.discogsToken
-    ?[["discogs",discogsArtURL],["itunes",fetchArtURL]]
-    :[["itunes",fetchArtURL],["discogs",discogsArtURL]];
-  for(const [via,fn] of order){
-    let u=null;try{u=await fn(artist,title)}catch(e){}
-    if(u)return {url:u,via};
-  }
-  return {url:null,via:null};
-}
+async function findCover(artist,title){return resolveCover(artist,title)}
+
+/* ---- tap-to-enlarge cover lightbox ---- */
+function openLightbox(src){if(!src)return;$("#lightboxImg").src=src;$("#lightbox").hidden=false}
+function closeLightbox(){$("#lightbox").hidden=true;$("#lightboxImg").src=""}
+
+/* ---- free 30-second audio samples (Apple Music previews via iTunes API) ---- */
+let _audio=null,_tracks=[],_trackIdx=0;
+function stopAudio(){if(_audio){try{_audio.pause()}catch(e){}_audio.src="";_audio=null}_tracks=[];_trackIdx=0;
+  const b=$("#ttSound");if(b){b.classList.remove("on","loading");b.setAttribute("aria-pressed","false")}
+  const np=$("#nowPlaying");if(np)np.textContent=""}
+function updateNow(){const np=$("#nowPlaying");if(np)np.textContent=(_audio&&!_audio.paused&&_tracks[_trackIdx])?` · ♪ ${_tracks[_trackIdx].name}`:""}
+async function albumTracks(artist,title){
+  const term=encodeURIComponent((artist+" "+title).trim());if(!term)return [];
+  let d=null;try{d=await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=8`)}catch(e){return []}
+  const albums=((d&&d.results)||[]).filter(x=>x.collectionId);
+  const pick=albums.find(x=>matchScore(artist,title,x.artistName,x.collectionName)>0)||null;
+  if(!pick)return [];
+  let t=null;try{t=await jsonp(`https://itunes.apple.com/lookup?id=${pick.collectionId}&entity=song&limit=60`)}catch(e){return []}
+  return ((t&&t.results)||[]).filter(x=>x.wrapperType==="track"&&x.previewUrl).map(x=>({name:x.trackName||"",url:x.previewUrl}))}
+function playTrack(){if(!_tracks.length)return;
+  if(!_audio){_audio=new Audio();_audio.addEventListener("ended",()=>{_trackIdx=(_trackIdx+1)%_tracks.length;playTrack()})}
+  _audio.src=_tracks[_trackIdx].url;_audio.play().catch(()=>{});
+  const b=$("#ttSound");if(b){b.classList.add("on");b.setAttribute("aria-pressed","true")}
+  const tt=$("#tt");if(tt&&!tt.classList.contains("playing")){const pw=$("#ttPower");if(pw)pw.click()} // keep the platter spinning with the audio
+  updateNow()}
+async function toggleSound(){
+  const b=$("#ttSound");
+  if(_audio){if(_audio.paused){_audio.play().catch(()=>{});b.classList.add("on");b.setAttribute("aria-pressed","true")}
+    else{_audio.pause();b.classList.remove("on");b.setAttribute("aria-pressed","false")}updateNow();return}
+  const r=records.find(x=>x.id===detailId);if(!r)return;
+  b.classList.add("loading");const np=$("#nowPlaying");if(np)np.textContent=" · finding a sample…";
+  let tr=[];try{tr=await albumTracks(r.artist,r.title)}catch(e){}
+  b.classList.remove("loading");
+  if(!tr.length){if(np)np.textContent="";toast("No free sample found for this album");return}
+  _tracks=tr;_trackIdx=0;playTrack()}
 async function getArt(id){const r=records.find(x=>x.id===id);if(!r)return;toast("Searching cover art…");
-  try{const {url}=await findCover(r.artist,r.title);if(!url){toast("No cover art found for that title");return}
-    r.art=url;await dbPut(r);renderAll();openDetail(id);toast("Cover art added")}
-  catch(e){toast("Couldn't reach the art service — try again")}}
-/* per-record override: force a Discogs pull, skipping iTunes — for when iTunes was wrong */
+  let url;try{({url}=await findCover(r.artist,r.title))}catch(e){toast("Couldn't reach the art service — try again");return}
+  if(!url){toast("No matching cover found for that title");return}
+  r.art=url;try{await dbPut(r)}catch(e){storageErr(e);return}renderAll();openDetail(id);toast("Cover art added")}
+/* per-record override: Discogs only, still validated (no wrong-artist grabs) */
 async function getArtFromDiscogs(id){const r=records.find(x=>x.id===id);if(!r)return;toast("Searching Discogs…");
-  try{const url=await discogsArtURL(r.artist,r.title);
-    if(!url){toast(settings.discogsToken?"No Discogs vinyl match for that title":"No Discogs match — a token may help");return}
-    r.art=url;await dbPut(r);renderAll();openDetail(id);toast("Cover updated from Discogs")}
-  catch(e){toast("Couldn't reach Discogs — try again")}}
+  let url;try{({url}=await resolveCover(r.artist,r.title,{source:"discogs"}))}catch(e){toast("Couldn't reach Discogs — try again");return}
+  if(!url){toast("No confident Discogs match — check the artist/title spelling");return}
+  r.art=url;try{await dbPut(r)}catch(e){storageErr(e);return}renderAll();openDetail(id);toast("Cover updated from Discogs")}
 async function findArtForForm(){
   const a=$("#f-artist").value.trim(),t=$("#f-title").value.trim();
   if(!a&&!t){toast("Enter an artist or title first");return}
@@ -1109,11 +1167,11 @@ async function fetchArtBulk(){
   bulkCancel=false;$("#bulkCancelBtn").textContent="Cancel";$("#bulkPanel").hidden=false;
   for(const r of list){if(bulkCancel)break;i++;
     $("#bulkText").textContent=`Fetching… ${i}/${total} — ${n} found`;$("#bulkBar").style.width=Math.round(i/total*100)+"%";
-    let res={url:null,via:null};try{res=await findCover(r.artist,r.title)}catch(e){}
+    let res={url:null,via:null,usedDiscogs:false};try{res=await findCover(r.artist,r.title)}catch(e){}
     if(res.url){const live=records.find(x=>x.id===r.id); // re-read in case it was edited mid-run
       if(live){live.art=res.url;try{await dbPut(live);n++;if(res.via==="discogs")dg++;if(n%6===0)renderLibrary(false)}catch(e){}}}
-    // pace for Discogs rate limits: token search = 1 call/record (60/min); anon fallback = 2 calls (25/min)
-    await new Promise(s=>setTimeout(s, hasTk?1200 : (res.via==="discogs"?5000:350)));}
+    // pace only when Discogs was actually queried (most records resolve via iTunes' fast path)
+    await new Promise(s=>setTimeout(s, res.usedDiscogs?(hasTk?1200:5000):200));}
   $("#bulkPanel").hidden=true;renderAll();const miss=total-n,via=dg?` (${dg} via Discogs)`:"";
   toast(bulkCancel?`Stopped — added ${n} cover${n!==1?"s":""}${via}`:(miss?`Added ${n} covers${via} — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records${via}`))}
 
@@ -1197,17 +1255,31 @@ function openDuplicates(){
 /* ---- barcode scan (BarcodeDetector over camera; manual entry fallback) ---- */
 let _scanStream=null,_scanRAF=0,_scanDet=null;
 function openScan(){$("#scanInput").value="";$("#scanMsg").textContent="Point the camera at the barcode on the back cover. No camera? Type the number below.";show("#scanScrim");startScan()}
+/* resolve a BarcodeDetector — native if present, else a free ZXing-based ponyfill (loaded on demand) */
+async function getBarcodeDetector(){
+  if("BarcodeDetector"in window)return window.BarcodeDetector;
+  try{await import("https://esm.sh/barcode-detector@2.3.1/side-effects")}catch(e){}
+  return ("BarcodeDetector"in window)?window.BarcodeDetector:null;
+}
 async function startScan(){
-  if(!("BarcodeDetector"in window)||!navigator.mediaDevices){$("#scanWrap").style.display="none";return}
-  try{
-    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-    const v=$("#scanVideo");v.srcObject=_scanStream;await v.play();$("#scanWrap").style.display="";
-    _scanDet=new window.BarcodeDetector({formats:["ean_13","upc_a","ean_8","upc_e","code_128"]});
-    const tick=async()=>{if(!_scanStream)return;
-      try{const codes=await _scanDet.detect(v);if(codes&&codes.length){const code=codes[0].rawValue;stopScanCam();$("#scanInput").value=code;lookupBarcode(code);return}}catch(e){}
-      _scanRAF=requestAnimationFrame(tick)};
-    _scanRAF=requestAnimationFrame(tick);
-  }catch(e){$("#scanWrap").style.display="none";$("#scanMsg").textContent="Camera unavailable — type the barcode number below."}
+  const wrap=$("#scanWrap"),msg=$("#scanMsg");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.isSecureContext){
+    wrap.style.display="none";msg.textContent="Camera needs a secure (https) page — type the barcode number below.";return}
+  msg.textContent="Starting camera…";
+  try{_scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}})}
+  catch(e){wrap.style.display="none";msg.textContent=(e&&e.name==="NotAllowedError")
+    ?"Camera permission was blocked — allow it in your browser settings, or type the number below."
+    :"Couldn't open the camera — type the barcode number below.";return}
+  const v=$("#scanVideo");v.srcObject=_scanStream;wrap.style.display="";try{await v.play()}catch(e){}
+  const BD=await getBarcodeDetector();
+  if(!BD){msg.textContent="Live scanning isn't supported on this browser — frame the barcode and type its number below.";return}
+  msg.textContent="Point the camera at the barcode…";
+  try{_scanDet=new BD({formats:["ean_13","upc_a","ean_8","upc_e","code_128"]})}catch(e){try{_scanDet=new BD()}catch(_){_scanDet=null}}
+  if(!_scanDet){msg.textContent="Live scanning isn't supported here — type the barcode number below.";return}
+  const tick=async()=>{if(!_scanStream)return;
+    try{const codes=await _scanDet.detect(v);if(codes&&codes.length){const code=codes[0].rawValue;stopScanCam();$("#scanInput").value=code;lookupBarcode(code);return}}catch(e){}
+    _scanRAF=requestAnimationFrame(tick)};
+  _scanRAF=requestAnimationFrame(tick);
 }
 function stopScanCam(){if(_scanRAF)cancelAnimationFrame(_scanRAF);_scanRAF=0;if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null}const v=$("#scanVideo");if(v)v.srcObject=null}
 function stopScan(){stopScanCam()}
@@ -1250,7 +1322,7 @@ document.addEventListener("click",e=>{
   const sc=e.target.closest(".scrim");if(sc&&e.target===sc)attemptClose();
 });
 document.addEventListener("keydown",e=>{
-  if(e.key==="Escape"){if(!$("#confirmScrim").hidden){closeConfirm(false);return}attemptClose();return}
+  if(e.key==="Escape"){if(!$("#lightbox").hidden){closeLightbox();return}if(!$("#confirmScrim").hidden){closeConfirm(false);return}attemptClose();return}
   if(e.key==="Tab"){const open=[...$$(".scrim"),$("#confirmScrim")].filter(s=>s&&!s.hidden).pop();
     if(open){const f=focusables(open);if(f.length){const first=f[0],last=f[f.length-1];
       if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
@@ -1332,7 +1404,8 @@ window.addEventListener("appinstalled",()=>{$("#installBanner").hidden=true;toas
 (function(){const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
   if(isIOS&&!standalone&&!localStorage.getItem("stacks-install-x")){$("#installBanner .t").innerHTML="<b>Install Stacks</b><br>Tap Share, then “Add to Home Screen”.";$("#installBtn").style.display="none";$("#installBanner").hidden=false}})();
 
-window.openForm=openForm;window.openDetail=openDetail;window.checkListings=checkListings;window.toggleStatus=toggleStatus;window.quickOwn=quickOwn;window.seed=seed;window.getArt=getArt;window.getArtFromDiscogs=getArtFromDiscogs;window.clearFilters=clearFilters;window.hideAll=hideAll;
+$("#lightbox").onclick=closeLightbox;
+window.openForm=openForm;window.openDetail=openDetail;window.checkListings=checkListings;window.toggleStatus=toggleStatus;window.quickOwn=quickOwn;window.seed=seed;window.getArt=getArt;window.getArtFromDiscogs=getArtFromDiscogs;window.clearFilters=clearFilters;window.hideAll=hideAll;window.openLightbox=openLightbox;
 
 /* service worker (only over http/https) — prompt to reload when a new version installs */
 if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
