@@ -35,5 +35,11 @@ Double-click `index.html`. Works fully offline. (Install prompts need hosting �
 - iOS App Store: requires a paid Apple Developer account ($99/yr). The Add-to-Home-Screen
   route above is the free way to get an app on an iPhone.
 
+## What you can do
+- File records with condition grades (media + sleeve), price paid & estimated value, tags, pressing/variant, a photo of your copy, and owned/wanted status.
+- **Scan a barcode** (form → "Scan barcode") to auto-fill from Discogs, or fetch real covers (iTunes + Discogs; add a token in Library tools for the best vinyl matches).
+- See the shape of your collection in **Insights** (decade/format/label/tag, value, spins), spot repeats with **Find duplicates**, and edit in bulk with **Select** mode.
+- Browse as a shelf or a crate of spines; the turntable logs each spin and shows what you play most.
+
 ## Back up your collection
-Library tools (⋮) → Export. Re-import on any device to move everything over.
+Library tools (⋮) → Export. Re-import on any device — you'll be asked to **Merge** (keeps everything, fills gaps, never overwrites newer edits) or **Replace** the whole library. Covers fetched online are cached so they keep showing offline.

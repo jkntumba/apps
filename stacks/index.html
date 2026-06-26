@@ -19,7 +19,7 @@
 <style>
 :root{
   --bg:#14100e; --bg-2:#1b1512; --panel:#221a16; --panel-2:#2a201a; --panel-3:#33271f;
-  --ink:#f1e8d9; --ink-2:#b6a795; --ink-3:#7c6f60; --ink-4:#564b40;
+  --ink:#f1e8d9; --ink-2:#b6a795; --ink-3:#9c8d7a; --ink-4:#564b40;
   --line:rgba(241,232,217,.09); --line-2:rgba(241,232,217,.16);
   --amber:#eaa23c; --amber-2:#f4bd61; --amber-deep:#c47f22;
   --garnet:#b1463a; --garnet-2:#c75a4c; --sage:#a6bd8a;
@@ -185,7 +185,7 @@ main{padding:4px 0 110px;min-height:60vh}
   display:flex;align-items:center;justify-content:center;overflow:hidden}
 .spine::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:rgba(0,0,0,.45)}
 .spine span{writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);font-size:10px;font-weight:700;
-  letter-spacing:.02em;white-space:nowrap;color:var(--si,#fff);max-height:206px;overflow:hidden;text-overflow:ellipsis;
+  letter-spacing:.02em;white-space:nowrap;color:var(--si,#fff);max-height:88%;overflow:hidden;text-overflow:ellipsis;
   text-shadow:0 1px 2px rgba(0,0,0,.4);padding:6px 0}
 .spine.exc::after{content:"★";position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:9px;color:#fff;opacity:.9}
 .spine:hover{transform:translateY(-22px) rotate(-2deg);box-shadow:0 24px 30px -14px rgba(0,0,0,.8);z-index:5}
@@ -240,8 +240,8 @@ main{padding:4px 0 110px;min-height:60vh}
 .spindle{position:absolute;left:50%;top:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;
   background:#cbb48a;z-index:3;box-shadow:0 0 0 2px #0b0908}
 .tonearm{position:absolute;right:6%;top:8%;width:46%;height:46%;transform-origin:88% 12%;
-  transform:rotate(-32deg);transition:transform 1s var(--ease);z-index:4}
-.tt.playing .tonearm{transform:rotate(-6deg)}
+  transform:rotate(-6deg);transition:transform 1s var(--ease);z-index:4} /* idle: parked off the rim */
+.tt.playing .tonearm{transform:rotate(-30deg)} /* playing: stylus cued onto the outer grooves */
 .tonearm .pivot{position:absolute;right:0;top:0;width:34px;height:34px;border-radius:50%;
   background:radial-gradient(circle at 35% 35%,#3a2f26,#1a1410);border:1px solid var(--line-2);box-shadow:0 4px 10px -3px #000}
 .tonearm .arm{position:absolute;right:14px;top:15px;height:5px;width:84%;border-radius:5px;transform-origin:right center;
@@ -320,7 +320,8 @@ main{padding:4px 0 110px;min-height:60vh}
 .cscrim[hidden]{display:none}
 .cmodal{background:linear-gradient(180deg,var(--bg-2),var(--bg));border:1px solid var(--line-2);border-radius:18px;
   max-width:380px;width:100%;padding:24px;box-shadow:var(--shadow);animation:rise .2s var(--ease)}
-.cmsg{font-size:15px;line-height:1.5;margin-bottom:20px}
+.cmsg{font-size:15px;line-height:1.5;margin-bottom:20px;white-space:pre-line}
+.cbtns{flex-wrap:wrap}
 .cbtns{display:flex;gap:10px;justify-content:flex-end}
 .btn.danger-solid{background:linear-gradient(180deg,var(--garnet-2),var(--garnet));color:#fff;border-color:transparent}
 .btn.danger-solid:hover{filter:brightness(1.07)}
@@ -350,9 +351,63 @@ main{padding:4px 0 110px;min-height:60vh}
   *{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .markwrap svg,.vinyl{animation:none!important}
 }
+/* ---- additions (v2) ---- */
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* entrance animation only on data renders (gated by .intro on the grid) */
+.rec{animation:none}
+.grid.intro .rec{animation:pop .5s var(--ease) both;animation-delay:var(--d,0s)}
+/* inline (single-grid) artist dividers — pack cards densely on wide screens */
+.grid>.divider{grid-column:1/-1;margin:24px 0 2px}
+.grid>.divider:first-child{margin-top:6px}
+/* condition grade chip on cards */
+.meta .grade{border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;color:var(--sage)}
+/* toast action button (Undo) */
+.toast-act{margin-left:14px;font-weight:700;color:var(--amber);text-decoration:underline;background:none;border:none;font-size:14px}
+/* bulk progress panel */
+.bulkpanel{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:80;width:min(420px,92vw);
+  background:var(--panel-2);border:1px solid var(--amber-deep);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);animation:rise .3s var(--ease)}
+.bulkpanel[hidden]{display:none}
+.bp-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;font-size:13.5px}
+/* batch select mode */
+.rec.sel .jacket{outline:3px solid var(--amber);outline-offset:2px}
+.spine.sel{outline:3px solid var(--amber);outline-offset:1px;z-index:6}
+.selbox{position:absolute;top:10px;right:10px;z-index:5;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(15,11,8,.8);border:1.5px solid var(--line-2);color:transparent;font-size:13px;font-weight:800}
+.rec.sel .selbox{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+.selbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:80;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;
+  background:var(--panel-2);border:1px solid var(--line-2);border-radius:16px;padding:11px 13px;box-shadow:var(--shadow);max-width:94vw;animation:rise .3s var(--ease)}
+.selbar[hidden]{display:none}
+.selbar .cnt{font-family:var(--mono);font-size:12.5px;color:var(--amber);align-self:center;padding:0 4px}
+/* insights / duplicates lists */
+.insgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:560px){.insgrid{grid-template-columns:1fr}}
+.inscard{border:1px solid var(--line);border-radius:14px;padding:15px;background:var(--panel)}
+.inscard h4{margin:0 0 12px;font-family:var(--display);font-weight:800;font-size:14px;letter-spacing:.02em}
+.insrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:13px}
+.insrow .lab{flex:none;width:84px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.insrow .bar{flex:1;height:7px;border-radius:99px;background:#0d0a08;border:1px solid var(--line);overflow:hidden}
+.insrow .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber-deep),var(--amber-2));border-radius:99px}
+.insrow .v{flex:none;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);width:34px;text-align:right}
+.insbig{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:18px}
+.insbig .b .n{font-family:var(--mono);font-weight:700;font-size:23px;color:var(--amber)}
+.insbig .b .l{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);margin-top:5px}
+.dupgrp{border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px;background:var(--panel)}
+.dupgrp .dh{font-weight:700;margin-bottom:9px}
+.dupitem{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+.dupitem .di{flex:1;color:var(--ink-2)}
+/* barcode scanner */
+.scanwrap{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;margin-bottom:14px}
+.scanwrap video{width:100%;height:100%;object-fit:cover;display:block}
+.scanwrap .reticle{position:absolute;left:12%;right:12%;top:38%;height:24%;border:2px solid var(--amber);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
+.icn{width:1em;height:1em;flex:none;vertical-align:-2px}
+@media(max-width:560px){
+  .install{left:12px;right:12px;bottom:12px;transform:none;max-width:none;border-radius:14px}
+  .install .t{flex:1;min-width:0}
+}
 </style>
 </head>
 <body>
+<h1 class="vh">Stacks — Vinyl Library</h1>
 <header class="top">
   <div class="wrap topinner">
     <div class="brand">
@@ -387,18 +442,21 @@ main{padding:4px 0 110px;min-height:60vh}
 <div class="wrap">
   <div class="bar">
     <div class="seg" id="statusSeg">
-      <button data-f="all" class="on">All</button>
+      <button data-f="all" class="on" aria-current="true">All</button>
       <button data-f="owned">On shelf</button>
       <button data-f="wishlist">Wanted</button>
     </div>
-    <button class="chip" id="excChip">★ Exclusives</button>
+    <button class="chip" id="excChip" aria-pressed="false">★ Exclusives</button>
+    <button class="chip" id="selChip" aria-pressed="false">☑ Select</button>
     <select class="sel" id="formatSel" aria-label="Format"><option value="all">Any format</option></select>
     <select class="sel" id="sortSel" aria-label="Sort">
       <option value="artist">Artist</option><option value="year">Year</option>
       <option value="added">Recently added</option><option value="title">Title</option>
+      <option value="cond">Condition</option><option value="value">Value</option>
+      <option value="spins">Most spun</option><option value="played">Recently played</option>
     </select>
     <div class="viewtoggle" id="viewToggle">
-      <button data-v="shelf" class="on" title="Shelf view" aria-label="Shelf view">
+      <button data-v="shelf" class="on" aria-current="true" title="Shelf view" aria-label="Shelf view">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       </button>
       <button data-v="crate" title="Crate view" aria-label="Crate view">
@@ -427,8 +485,11 @@ main{padding:4px 0 110px;min-height:60vh}
     <div class="mbody">
       <div class="statustoggle" id="statusToggle">
         <button type="button" data-v="owned">On the shelf</button>
-        <button type="button" data-v="wishlist" class="on">Want it</button>
+        <button type="button" data-v="wishlist">Want it</button>
       </div>
+      <button type="button" class="btn" id="scanBtn" style="width:100%;justify-content:center;margin-bottom:14px">
+        <svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M7 5v14M11 5v10M11 18v1M15 5v14M19 5v14"/></svg>
+        Scan barcode to auto-fill</button>
       <div class="row2">
         <div class="field"><label for="f-artist">Artist</label><input id="f-artist" list="artistList" placeholder="Stevie Wonder"></div>
         <div class="field"><label for="f-title">Title</label><input id="f-title" placeholder="Talking Book"></div>
@@ -448,6 +509,16 @@ main{padding:4px 0 110px;min-height:60vh}
       <div class="row2">
         <div class="field"><label for="f-variant">Pressing / variant</label><input id="f-variant" placeholder="180g · red /500"></div>
         <div class="field"><label for="f-cat">Catalog #</label><input id="f-cat" placeholder="T 319"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="f-condMedia">Media grade</label><select id="f-condMedia">
+          <option value="">Not graded</option><option value="M">M — Mint</option><option value="NM">NM — Near Mint</option><option value="VG+">VG+ — Very Good Plus</option><option value="VG">VG — Very Good</option><option value="G+">G+ — Good Plus</option><option value="G">G — Good</option><option value="F">F — Fair</option><option value="P">P — Poor</option></select></div>
+        <div class="field"><label for="f-condSleeve">Sleeve grade</label><select id="f-condSleeve">
+          <option value="">Not graded</option><option value="M">M — Mint</option><option value="NM">NM — Near Mint</option><option value="VG+">VG+ — Very Good Plus</option><option value="VG">VG — Very Good</option><option value="G+">G+ — Good Plus</option><option value="G">G — Good</option><option value="F">F — Fair</option><option value="P">P — Poor</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="f-paid">Paid</label><input id="f-paid" inputmode="decimal" placeholder="24.99"></div>
+        <div class="field"><label for="f-value">Est. value</label><input id="f-value" inputmode="decimal" placeholder="40"></div>
       </div>
       <div class="field"><label for="f-tags">Tags</label><input id="f-tags" placeholder="soul, reissue, signed"></div>
       <label class="check"><input type="checkbox" id="f-exc"><span>Exclusive / special — limited, signed, store-exclusive, or memorabilia</span></label>
@@ -482,17 +553,55 @@ main{padding:4px 0 110px;min-height:60vh}
     <div class="mhead"><h3>Library tools</h3><button class="xclose" data-close aria-label="Close">✕</button></div>
     <div class="mbody">
       <p style="margin:0 0 14px;color:var(--ink-2);font-size:13.5px">Your library lives on this device. Back it up or move it with a library file.</p>
-      <div class="listingbar" style="margin-bottom:16px">
-        <button class="btn" id="exportBtn">⤓ Export library</button>
-        <button class="btn" id="importBtn">⤒ Import library</button>
+      <div class="listingbar" style="margin-bottom:12px">
+        <button class="btn" id="exportBtn"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg> Export library</button>
+        <button class="btn" id="importBtn"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3m0 0 4 4m-4-4-4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg> Import library</button>
         <input type="file" id="importFile" accept="application/json,.json" class="hide">
       </div>
-      <button class="btn primary hide" id="installBtn2" style="margin-bottom:16px">⤓ Install Stacks on this device</button>
-      <div class="field"><label for="discogsToken">Discogs token (optional — live listing checks)</label><input id="discogsToken" placeholder="paste personal access token"></div>
-      <p style="margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.5">Without a token, “Check listings” opens Discogs &amp; eBay searches. With one, Stacks checks live vinyl listings for wanted records and pops a notification when it finds any.</p>
+      <div class="listingbar" style="margin-bottom:16px">
+        <button class="btn" id="insightsBtn"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg> Insights</button>
+        <button class="btn" id="dupBtn"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg> Find duplicates</button>
+      </div>
+      <button class="btn primary hide" id="installBtn2" style="margin-bottom:16px"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg> Install Stacks on this device</button>
+      <div class="row2">
+        <div class="field"><label for="discogsToken">Discogs token (optional)</label><input id="discogsToken" placeholder="paste personal access token"></div>
+        <div class="field"><label for="currencySym">Currency symbol</label><input id="currencySym" placeholder="$" maxlength="3"></div>
+      </div>
+      <p style="margin:0 0 14px;color:var(--ink-3);font-size:12.5px;line-height:1.5">With a token saved, Stacks fetches covers from Discogs first (most accurate for vinyl) and checks live listings for wanted records, popping a notification when it finds any. Without one, “Check listings” opens Discogs &amp; eBay searches and covers still work via Discogs, just slower (rate-limited).</p>
       <button class="btn" id="seedBtn">Load sample records</button>
-      <button class="btn" id="artBulkBtn" style="margin-left:8px">🖼 Fetch all missing covers</button>
-      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers for every record that doesn't have one yet — from the iTunes catalog first, then Discogs for anything iTunes can't match. For a large library this can take a few minutes — keep the app open while it runs. Adding a Discogs token below makes the Discogs step faster. You can run it again any time to retry any that weren't found.</p>
+      <button class="btn" id="artBulkBtn" style="margin-left:8px"><svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg> Fetch all missing covers</button>
+      <p style="margin:12px 0 0;color:var(--ink-3);font-size:12.5px;line-height:1.5">Pulls real album covers for every record that doesn't have one yet. With a Discogs token saved above it searches Discogs first (most accurate for vinyl); otherwise it uses the iTunes catalog — now artist-verified to avoid wrong matches — and falls back to Discogs. For a large library this can take a few minutes — keep the app open while it runs. If a single cover comes out wrong, open that record and tap “💿 From Discogs”. You can run it again any time to retry any that weren't found.</p>
+    </div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="scrim" id="insightsScrim" hidden>
+  <div class="modal wide" role="dialog" aria-modal="true" aria-label="Collection insights">
+    <div class="mhead"><h3>Collection insights</h3><button class="xclose" data-close aria-label="Close">✕</button></div>
+    <div class="mbody" id="insightsBody"></div>
+  </div>
+</div>
+
+<!-- DUPLICATES -->
+<div class="scrim" id="dupScrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Duplicates">
+    <div class="mhead"><h3>Possible duplicates</h3><button class="xclose" data-close aria-label="Close">✕</button></div>
+    <div class="mbody" id="dupBody"></div>
+  </div>
+</div>
+
+<!-- BARCODE SCAN -->
+<div class="scrim" id="scanScrim" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Scan barcode">
+    <div class="mhead"><h3>Scan barcode</h3><button class="xclose" data-close aria-label="Close">✕</button></div>
+    <div class="mbody">
+      <div class="scanwrap" id="scanWrap" style="display:none"><video id="scanVideo" playsinline muted></video><div class="reticle"></div></div>
+      <p id="scanMsg" style="margin:0 0 14px;color:var(--ink-2);font-size:13.5px;line-height:1.5">Point the camera at the barcode on the record's back cover. No camera? Type the number below.</p>
+      <div class="row2" style="align-items:end">
+        <div class="field" style="margin:0"><label for="scanInput">Barcode number</label><input id="scanInput" inputmode="numeric" placeholder="e.g. 075992725217"></div>
+        <button class="btn primary" id="scanLookup" style="margin-bottom:0">Look up</button>
+      </div>
     </div>
   </div>
 </div>
@@ -505,10 +614,22 @@ main{padding:4px 0 110px;min-height:60vh}
 <div class="cscrim" id="confirmScrim" hidden>
   <div class="cmodal" role="alertdialog" aria-modal="true" aria-labelledby="confirmMsg">
     <div class="cmsg" id="confirmMsg">Are you sure?</div>
-    <div class="cbtns"><button class="btn" id="confirmNo">Cancel</button><button class="btn danger-solid" id="confirmYes">Delete</button></div>
+    <div class="cbtns" id="confirmBtns"></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="bulkpanel" id="bulkPanel" hidden>
+  <div class="bp-top"><span id="bulkText">Fetching covers…</span><button class="btn" id="bulkCancelBtn">Cancel</button></div>
+  <div class="barline"><i id="bulkBar" style="width:0%"></i></div>
+</div>
+<div class="selbar" id="selBar" hidden>
+  <span class="cnt" id="selCount">0 selected</span>
+  <button class="btn" id="selOwn">On the shelf</button>
+  <button class="btn" id="selWant">Wanted</button>
+  <button class="btn" id="selTag">Add tag</button>
+  <button class="btn danger" id="selDel">Delete</button>
+  <button class="btn" id="selDone">Done</button>
+</div>
 
 <script>
 "use strict";
@@ -518,15 +639,36 @@ function db(){return new Promise((res,rej)=>{if(_db)return res(_db);const r=inde
   r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:"id"})};
   r.onsuccess=()=>{_db=r.result;res(_db)};r.onerror=()=>rej(r.error)})}
 async function dbAll(){const d=await db();return new Promise((res,rej)=>{const t=d.transaction(STORE).objectStore(STORE).getAll();t.onsuccess=()=>res(t.result||[]);t.onerror=()=>rej(t.error)})}
-async function dbPut(rec){try{const d=await db();await new Promise((res,rej)=>{const t=d.transaction(STORE,"readwrite");t.objectStore(STORE).put(rec);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){console.warn("save fell back to memory",e)}}
-async function dbDel(id){try{const d=await db();await new Promise((res,rej)=>{const t=d.transaction(STORE,"readwrite");t.objectStore(STORE).delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error)})}catch(e){console.warn("delete memory-only",e)}}
+/* these REJECT on failure so callers can surface an error instead of silently losing data */
+async function dbPut(rec){const d=await db();return new Promise((res,rej)=>{const t=d.transaction(STORE,"readwrite");t.objectStore(STORE).put(rec);t.oncomplete=res;t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+async function dbDel(id){const d=await db();return new Promise((res,rej)=>{const t=d.transaction(STORE,"readwrite");t.objectStore(STORE).delete(id);t.oncomplete=res;t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+async function dbClear(){const d=await db();return new Promise((res,rej)=>{const t=d.transaction(STORE,"readwrite");t.objectStore(STORE).clear();t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+function storageErr(e){const q=e&&(/quota/i.test(e.name||"")||/quota/i.test(e.message||""));toast(q?"Couldn't save — this device's storage is full":"Couldn't save to this device — try again")}
 
 let records=[], editingPhoto=null, editingArt=null, editId=null, detailId=null;
-const state={q:"",status:"all",format:"all",artist:"all",exc:false,sort:"artist",view:"shelf"};
+let formDirty=false, bulkCancel=false, _searchT=0, _lastFocus=null;
+const selected=new Set();
+const state={q:"",status:"all",format:"all",artist:"all",exc:false,sort:"artist",view:"shelf",select:false};
 const settings=JSON.parse(localStorage.getItem("stacks-settings")||"{}");
+const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function saveSettings(){localStorage.setItem("stacks-settings",JSON.stringify(settings))}
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=s=>(s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function curSym(){return settings.currency||"$"}
+function money(v){return (v||v===0)?curSym()+(Math.round(v*100)/100):""}
+const GRADE_RANK={M:8,NM:7,"VG+":6,VG:5,"G+":4,G:3,F:2,P:1};
+/* canonical record shape — also the import sanitiser (coerces types so bad files can't crash render) */
+function normRec(r){if(!r||typeof r!=="object")return null;
+  const num=v=>{const n=parseFloat(v);return isFinite(n)?n:null};
+  let tags=r.tags;if(typeof tags==="string")tags=tags.split(",").map(s=>s.trim()).filter(Boolean);if(!Array.isArray(tags))tags=[];
+  tags=tags.map(t=>String(t)).filter(Boolean);
+  return {id:r.id||uid(),artist:String(r.artist||""),title:String(r.title||""),year:String(r.year||""),
+    format:String(r.format||"LP"),label:String(r.label||""),variant:String(r.variant||""),catalog:String(r.catalog||""),
+    condMedia:String(r.condMedia||""),condSleeve:String(r.condSleeve||""),paid:num(r.paid),value:num(r.value),
+    tags,link:String(r.link||""),notes:String(r.notes||""),exclusive:!!r.exclusive,
+    status:r.status==="owned"?"owned":"wishlist",photo:r.photo||null,art:r.art||null,
+    spins:parseInt(r.spins)||0,lastPlayed:parseInt(r.lastPlayed)||0,added:parseInt(r.added)||Date.now()}}
 
 /* curated duotone sleeves — picked deterministically so the wall looks designed */
 const SLEEVES=[
@@ -559,49 +701,60 @@ function visible(){
   r.sort((m,n)=>by==="year"?(parseInt(n.year)||0)-(parseInt(m.year)||0)
     :by==="added"?(n.added||0)-(m.added||0)
     :by==="title"?(m.title||"").localeCompare(n.title||"")
+    :by==="cond"?((GRADE_RANK[n.condMedia]||0)-(GRADE_RANK[m.condMedia]||0))
+    :by==="value"?((n.value||0)-(m.value||0))
+    :by==="spins"?((n.spins||0)-(m.spins||0))
+    :by==="played"?((n.lastPlayed||0)-(m.lastPlayed||0))
     :(m.artist||"").localeCompare(n.artist||"")||(parseInt(m.year)||0)-(parseInt(n.year)||0));
   return r;
 }
 
 /* ============ cover rendering (photo > fetched art > designed sleeve) ============ */
 function genInner(rec){const s=sleeve(rec);return `<div class="gen" style="background:linear-gradient(150deg,${s.c1},${s.c2});color:${s.ink}"><div class="ring"></div><div class="ga">${esc(rec.artist||"—")}</div><div class="gt">${esc(rec.title||"Untitled")}</div></div>`}
-function coverInner(rec){const src=rec.photo||rec.art;return src?`<img src="${src}" data-cover="${rec.id}" alt="${esc(rec.artist)} – ${esc(rec.title)}">`:genInner(rec)}
+function coverInner(rec){const src=rec.photo||rec.art;return src?`<img src="${esc(src)}" loading="lazy" decoding="async" data-cover="${rec.id}" alt="${esc(rec.artist)} – ${esc(rec.title)}">`:genInner(rec)}
 
 /* ============ render ============ */
 function cardHTML(rec,i){
   const s=sleeve(rec);
   const cover=`<div class="jacket">${coverInner(rec)}</div>`;
   const sp=rec.status==="owned"?`<span class="pill owned">● Shelf</span>`:`<span class="pill want">○ Wanted</span>`;
-  return `<div class="rec" data-id="${rec.id}" tabindex="0" role="button" aria-label="${esc(rec.artist)} – ${esc(rec.title)}" style="--d:${Math.min(i,22)*0.025}s">
+  const grade=rec.condMedia?`<span class="grade">${esc(rec.condMedia)}</span>`:"";
+  const sel=state.select&&selected.has(rec.id);
+  const selbox=state.select?`<div class="selbox">✓</div>`:"";
+  return `<div class="rec${sel?" sel":""}" data-id="${rec.id}" tabindex="0" role="button" aria-label="${esc(rec.artist)} – ${esc(rec.title)}"${state.select?` aria-pressed="${sel}"`:""} style="--d:${Math.min(i,22)*0.025}s">
     <div class="jw"><div class="disc" style="--lbl:${s.lbl}"></div>${cover}
-      <div class="badges">${sp}</div>${rec.exclusive?`<div class="star" title="Exclusive">★</div>`:""}</div>
+      <div class="badges">${sp}</div>${rec.exclusive?`<div class="star" title="Exclusive">★</div>`:""}${selbox}</div>
     <div class="meta"><div class="a">${esc(rec.artist||"—")}</div><div class="t">${esc(rec.title||"Untitled")}</div>
-      <div class="x"><span class="fmt">${esc(rec.format||"LP")}</span>${rec.year?`<span>${esc(rec.year)}</span>`:""}</div></div></div>`;
+      <div class="x"><span class="fmt">${esc(rec.format||"LP")}</span>${rec.year?`<span>${esc(rec.year)}</span>`:""}${grade}</div></div></div>`;
 }
+const SPINE_SZ={"Box set":[46,240],"3×LP":[40,236],"2×LP":[36,234],"LP":[30,230],"Picture disc":[30,230],'12" Single':[30,224],"EP":[26,212],'10"':[26,206],'7"':[22,188]};
 function spineHTML(rec){
-  const s=sleeve(rec);
+  const s=sleeve(rec),sz=SPINE_SZ[rec.format]||SPINE_SZ.LP,sel=state.select&&selected.has(rec.id);
   const lbl=((rec.artist||"")+" — "+(rec.title||"")).slice(0,42);
-  return `<div class="spine ${rec.status==="owned"?"owned":""} ${rec.exclusive?"exc":""}" data-id="${rec.id}" title="${esc(rec.artist)} – ${esc(rec.title)}"
-    style="--c1:${s.c1};--c2:${s.lbl};--si:${s.ink}"><span>${esc(lbl)}</span></div>`;
+  return `<div class="spine ${rec.status==="owned"?"owned":""} ${rec.exclusive?"exc":""}${sel?" sel":""}" data-id="${rec.id}" tabindex="0" role="button" aria-label="${esc(rec.artist)} – ${esc(rec.title)}"${state.select?` aria-pressed="${sel}"`:""}
+    style="--c1:${s.c1};--c2:${s.lbl};--si:${s.ink};width:${sz[0]}px;height:${sz[1]}px"><span>${esc(lbl)}</span></div>`;
 }
-function renderLibrary(){
+function renderLibrary(animate){
   const lib=$("#library"),list=visible();
   if(!records.length){lib.innerHTML=emptyHTML(true);mountEmptyDeck();return}
   if(!list.length){lib.innerHTML=emptyHTML(false);return}
   if(state.view==="crate"){lib.innerHTML=`<div class="crate">${list.map(spineHTML).join("")}</div>`;return}
+  const cls="grid"+(animate&&!reduceMotion?" intro":"");
   const groupByArtist=(state.sort==="artist"&&state.artist==="all"&&!state.q);
   if(groupByArtist){
     const g={};list.forEach(r=>{(g[r.artist||"—"]=g[r.artist||"—"]||[]).push(r)});
-    lib.innerHTML=Object.keys(g).sort((a,b)=>a.localeCompare(b)).map(art=>{
+    // one shared grid; dividers are full-row items so cards pack densely on wide screens
+    const html=Object.keys(g).sort((a,b)=>a.localeCompare(b)).map(art=>{
       const it=g[art],own=it.filter(x=>x.status==="owned").length;
-      return `<div class="divider"><span class="tab-letter">${esc((art[0]||"#").toUpperCase())}</span><span class="nm">${esc(art)}</span><span class="ln"></span><span class="ct">${own}/${it.length}</span></div>
-        <div class="grid">${it.map((r,i)=>cardHTML(r,i)).join("")}</div>`}).join("");
-  }else lib.innerHTML=`<div class="grid">${list.map((r,i)=>cardHTML(r,i)).join("")}</div>`;
+      return `<div class="divider"><span class="tab-letter">${esc((art[0]||"#").toUpperCase())}</span><span class="nm">${esc(art)}</span><span class="ln"></span><span class="ct">${own}/${it.length}</span></div>`
+        +it.map((r,i)=>cardHTML(r,i)).join("")}).join("");
+    lib.innerHTML=`<div class="${cls}">${html}</div>`;
+  }else lib.innerHTML=`<div class="${cls}">${list.map((r,i)=>cardHTML(r,i)).join("")}</div>`;
 }
 function emptyHTML(first){return `<div class="empty">${first?`<div class="tt-mini" id="emptyDeck"></div>`:`<div class="tt-mini"></div>`}
   <h2>${first?"Your crate is empty":"Nothing matches"}</h2>
-  <p>${first?"Start filing the collection — add a record you own, or save one you're hunting for. Or load a sample to look around.":"No records fit these filters. Try clearing the search or switching tabs."}</p>
-  ${first?`<button class="btn primary" onclick="openForm()">Add your first record</button> <button class="btn" onclick="seed()">Load samples</button>`:""}</div>`}
+  <p>${first?"Start filing the collection — add a record you own, or save one you're hunting for. Or load a sample to look around.":"No records fit these filters. Clear them to see your whole collection."}</p>
+  ${first?`<button class="btn primary" onclick="openForm()">Add your first record</button> <button class="btn" onclick="seed()">Load samples</button>`:`<button class="btn primary" onclick="clearFilters()">Clear filters &amp; search</button>`}</div>`}
 function mountEmptyDeck(){const el=$("#emptyDeck");if(el)el.innerHTML=deckSVG()}
 function deckSVG(){return `<svg viewBox="0 0 100 100" style="width:100%;height:100%"><defs></defs>
   <circle cx="50" cy="50" r="44" fill="#181210" stroke="#33271f"/><circle cx="50" cy="50" r="44" fill="none" stroke="#0b0908" stroke-width="0.5" stroke-dasharray="0.6 1.4"/>
@@ -612,11 +765,14 @@ function renderRail(){
   const own=records.filter(r=>r.status==="owned").length,want=records.filter(r=>r.status==="wishlist").length,
     exc=records.filter(r=>r.exclusive).length,art=new Set(records.map(r=>r.artist).filter(Boolean)).size,
     tot=records.length,pct=tot?Math.round(own/tot*100):0;
+  const val=records.reduce((a,r)=>a+(r.value||r.paid||0),0);
+  const valStat=val>0?`<div class="stat"><div class="n">${esc(money(Math.round(val)))}</div><div class="l">Est. value</div></div>`:"";
   $("#rail").innerHTML=`
     <div class="stat"><div class="n">${own}</div><div class="l">On the shelf</div></div>
     <div class="stat"><div class="n">${want}</div><div class="l">Wanted</div></div>
     <div class="stat g"><div class="n">${exc}</div><div class="l">Exclusives</div></div>
     <div class="stat"><div class="n">${art}</div><div class="l">Artists</div></div>
+    ${valStat}
     <div class="meter"><div class="top"><span>Collection</span><span class="pct">${pct}%</span></div>
       <div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
 }
@@ -625,20 +781,34 @@ function renderFilters(){
   fs.innerHTML=`<option value="all">Any format</option>`+fmts.map(f=>`<option>${esc(f)}</option>`).join("");
   fs.value=(cur==="all"||fmts.includes(cur))?cur:"all";
   const arts=[...new Set(records.map(r=>r.artist).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-  $("#tabs").innerHTML=[`<button class="tab ${state.artist==="all"?"on":""}" data-art="all">All artists</button>`]
-    .concat(arts.map(a=>`<button class="tab ${state.artist===a?"on":""}" data-art="${esc(a)}">${esc(a)}<span class="c">${records.filter(r=>r.artist===a).length}</span></button>`)).join("");
+  $("#tabs").innerHTML=[`<button class="tab ${state.artist==="all"?"on":""}" data-art="all"${state.artist==="all"?' aria-current="true"':''}>All artists</button>`]
+    .concat(arts.map(a=>`<button class="tab ${state.artist===a?"on":""}" data-art="${esc(a)}"${state.artist===a?' aria-current="true"':''}>${esc(a)}<span class="c">${records.filter(r=>r.artist===a).length}</span></button>`)).join("");
   $("#artistList").innerHTML=arts.map(a=>`<option value="${esc(a)}">`).join("");
 }
-function renderAll(){renderRail();renderFilters();renderLibrary()}
+function renderAll(){renderRail();renderFilters();renderLibrary(true)}
 
 /* ============ turntable detail ============ */
+const ICONS={
+ search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+ disc:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/>',
+ link:'<path d="M14 4h6v6M20 4l-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+ check:'<path d="M20 6 9 17l-5-5"/>'
+};
+function ic(n){return `<svg class="icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">${ICONS[n]||""}</svg>`}
 function openDetail(id){
   const r=records.find(x=>x.id===id);if(!r)return;detailId=id;
+  // count a "spin" when you put a record on — debounced so quick re-opens don't inflate it
+  const now=Date.now();if(now-(r.lastPlayed||0)>60000){r.spins=(r.spins||0)+1;r.lastPlayed=now;dbPut(r).catch(()=>{})}
   const s=sleeve(r);
   const _src=r.photo||r.art;
-  const sleeveArt=_src?`<img src="${_src}" data-cover="${r.id}" alt="" style="width:100%;border-radius:8px;border:1px solid var(--line-2)">`
+  const sleeveArt=_src?`<img src="${esc(_src)}" loading="lazy" decoding="async" data-cover="${r.id}" alt="" style="width:100%;border-radius:8px;border:1px solid var(--line-2)">`
     :`<div class="gen" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line-2);background:linear-gradient(150deg,${s.c1},${s.c2});color:${s.ink}"><div class="ring"></div><div class="ga">${esc(r.artist)}</div><div class="gt">${esc(r.title)}</div></div>`;
-  const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.variant&&["Pressing",esc(r.variant)],r.label&&["Label",esc(r.label)],r.catalog&&["Catalog",`<span style="font-family:var(--mono)">${esc(r.catalog)}</span>`]].filter(Boolean);
+  const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.variant&&["Pressing",esc(r.variant)],
+    r.label&&["Label",esc(r.label)],r.catalog&&["Catalog",`<span style="font-family:var(--mono)">${esc(r.catalog)}</span>`],
+    r.condMedia&&["Media",esc(r.condMedia)],r.condSleeve&&["Sleeve",esc(r.condSleeve)],
+    (r.paid!=null)&&["Paid",esc(money(r.paid))],(r.value!=null)&&["Est. value",esc(money(r.value))],
+    (r.spins>0)&&["Played",`${r.spins}×${r.lastPlayed?` · ${esc(new Date(r.lastPlayed).toLocaleDateString())}`:""}`]].filter(Boolean);
   $("#detailBody").innerHTML=`
     <div class="deck">
       <div class="tt playing" id="tt">
@@ -649,7 +819,7 @@ function openDetail(id){
         <div class="tonearm"><div class="pivot"></div><div class="arm"><div class="head"></div></div></div>
       </div>
       <div class="deckbase">
-        <button class="power" id="ttPower" aria-label="Play or pause"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" id="ttIcon"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+        <button class="power" id="ttPower" aria-label="Pause" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" id="ttIcon" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
         <div class="rpm">33<b>⅓</b> RPM · <span id="ttState">spinning</span></div>
       </div>
     </div>
@@ -662,9 +832,10 @@ function openDetail(id){
       ${(r.tags||[]).length?`<div class="tagrow">${r.tags.map(t=>`<span class="tg">${esc(t)}</span>`).join("")}</div>`:""}
       ${r.notes?`<div class="note">${esc(r.notes)}</div>`:""}
       <div class="listingbar">
-        <button class="btn" onclick="checkListings('${r.id}')">🔎 Check listings</button>
-        <button class="btn" onclick="getArt('${r.id}')">🖼 ${r.art?"Change":"Get"} cover art</button>
-        ${r.link?`<a class="btn" href="${esc(r.link)}" target="_blank" rel="noopener">↗ Saved link</a>`:""}
+        <button class="btn" onclick="checkListings('${r.id}')">${ic('search')} Check listings</button>
+        <button class="btn" onclick="getArt('${r.id}')">${ic('image')} ${r.art?"Change":"Get"} cover art</button>
+        <button class="btn" onclick="getArtFromDiscogs('${r.id}')" title="Force a Discogs vinyl match — use when the auto cover is wrong">${ic('disc')} From Discogs</button>
+        ${r.link?`<a class="btn" href="${esc(r.link)}" target="_blank" rel="noopener">${ic('link')} Saved link</a>`:""}
       </div>
       <div class="cover-lean" style="margin-top:16px;max-width:150px">${sleeveArt}</div>
     </div>`;
@@ -674,9 +845,11 @@ function openDetail(id){
   show("#detailScrim");
   const pw=$("#ttPower");pw.onclick=()=>{const tt=$("#tt"),on=tt.classList.toggle("playing");
     $("#ttIcon").innerHTML=on?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>':'<path d="M8 5v14l11-7z"/>';
+    pw.setAttribute("aria-label",on?"Pause":"Play");pw.setAttribute("aria-pressed",String(on));
     $("#ttState").textContent=on?"spinning":"paused"};
 }
-async function toggleStatus(id){const r=records.find(x=>x.id===id);if(!r)return;r.status=r.status==="owned"?"wishlist":"owned";await dbPut(r);renderAll();openDetail(id);toast(r.status==="owned"?"Filed on the shelf":"Moved to wanted")}
+async function toggleStatus(id){const r=records.find(x=>x.id===id);if(!r)return;const prev=r.status;r.status=prev==="owned"?"wishlist":"owned";
+  try{await dbPut(r)}catch(e){r.status=prev;storageErr(e);return}renderAll();openDetail(id);toast(r.status==="owned"?"Filed on the shelf":"Moved to wanted")}
 
 function checkListings(id){
   const r=records.find(x=>x.id===id);if(!r)return;
@@ -704,16 +877,19 @@ function openForm(id){
   const v=(s,val)=>$(s).value=val||"";
   v("#f-artist",f?.artist);v("#f-title",f?.title);v("#f-year",f?.year);$("#f-format").value=f?.format||"LP";
   v("#f-label",f?.label);v("#f-variant",f?.variant);v("#f-cat",f?.catalog);v("#f-tags",(f?.tags||[]).join(", "));
+  $("#f-condMedia").value=f?.condMedia||"";$("#f-condSleeve").value=f?.condSleeve||"";
+  v("#f-paid",f&&f.paid!=null?f.paid:"");v("#f-value",f&&f.value!=null?f.value:"");
   v("#f-link",f?.link);v("#f-notes",f?.notes);$("#f-exc").checked=!!f?.exclusive;
-  setStatus(f?.status||"wishlist");editingPhoto=f?.photo||null;renderPhoto();
+  setStatus(f?f.status:null);editingPhoto=f?.photo||null;renderPhoto(); /* new records: no status preselected — you choose */
   editingArt=f?.art||null;renderArtChip();
+  formDirty=false;
   show("#formScrim");setTimeout(()=>$("#f-artist").focus(),80);
 }
 function renderArtChip(){const pv=$("#artPreview"),rm=$("#removeArtBtn");
   if(editingArt){pv.src=editingArt;pv.classList.add("show");rm.style.display=""}
   else{pv.src="";pv.classList.remove("show");rm.style.display="none"}}
-function setStatus(v){$$("#statusToggle button").forEach(b=>b.classList.toggle("on",b.dataset.v===v))}
-function curStatus(){return $("#statusToggle button.on").dataset.v}
+function setStatus(v){$$("#statusToggle button").forEach(b=>{const on=b.dataset.v===v;b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));formDirty=true})}
+function curStatus(){const b=$("#statusToggle button.on");return b?b.dataset.v:"owned"}
 function renderPhoto(){const d=$("#photodrop");
   if(editingPhoto){d.classList.add("has");d.innerHTML=`<img src="${editingPhoto}" alt=""><button type="button" class="rm" id="rmPhoto">Remove</button>`}
   else{d.classList.remove("has");d.innerHTML=`<div><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="opacity:.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg><div style="margin-top:8px;font-size:13px">Tap to add a photo of the sleeve or label</div></div>`}}
@@ -725,15 +901,30 @@ function compress(file){return new Promise((res,rej)=>{const rd=new FileReader()
 async function saveForm(){
   const artist=$("#f-artist").value.trim(),title=$("#f-title").value.trim();
   if(!artist&&!title){toast("Add at least an artist or a title");return}
+  const ex=editId?records.find(x=>x.id===editId):null;
+  if(!editId){ // duplicate detection on new records
+    const dk=_norm(artist)+"|"+_norm(title);
+    const dup=records.find(x=>_norm(x.artist)+"|"+_norm(x.title)===dk);
+    if(dup){const c=await chooseDialog(`Looks like “${dup.artist||"—"} – ${dup.title||"Untitled"}” is already in your library.`,
+      [{label:"Cancel",value:"cancel"},{label:"Open existing",value:"open"},{label:"Add anyway",value:"add",cls:"primary"}]);
+      if(c==="cancel"||!c)return;
+      if(c==="open"){hideAll();openDetail(dup.id);return}}
+  }
+  const num=s=>{const n=parseFloat(s);return isFinite(n)?n:null};
   const rec={id:editId||uid(),artist,title,year:$("#f-year").value.trim(),format:$("#f-format").value,
     label:$("#f-label").value.trim(),variant:$("#f-variant").value.trim(),catalog:$("#f-cat").value.trim(),
+    condMedia:$("#f-condMedia").value,condSleeve:$("#f-condSleeve").value,paid:num($("#f-paid").value),value:num($("#f-value").value),
     tags:$("#f-tags").value.split(",").map(s=>s.trim()).filter(Boolean),link:$("#f-link").value.trim(),
     notes:$("#f-notes").value.trim(),exclusive:$("#f-exc").checked,status:curStatus(),photo:editingPhoto||null,art:editingArt||null,
-    added:editId?(records.find(x=>x.id===editId)?.added||Date.now()):Date.now()};
-  await dbPut(rec);const i=records.findIndex(x=>x.id===rec.id);if(i>=0)records[i]=rec;else records.push(rec);
-  hideAll();renderAll();toast(editId?"Saved":"Filed")}
-async function deleteRec(){if(!editId)return;const ok=await confirmDialog("Remove this record from the library? This can’t be undone.");if(!ok)return;
-  const id=editId;await dbDel(id);records=records.filter(x=>x.id!==id);hideAll();renderAll();toast("Removed")}
+    spins:ex?ex.spins||0:0,lastPlayed:ex?ex.lastPlayed||0:0,added:ex?ex.added||Date.now():Date.now()};
+  try{await dbPut(rec)}catch(e){storageErr(e);return}
+  const i=records.findIndex(x=>x.id===rec.id);if(i>=0)records[i]=rec;else records.push(rec);
+  formDirty=false;hideAll();renderAll();toast(editId?"Saved":"Filed")}
+async function deleteRec(){if(!editId)return;const ok=await confirmDialog("Remove this record from the library?","Delete");if(!ok)return;
+  const id=editId,removed=records.find(x=>x.id===id);
+  try{await dbDel(id)}catch(e){storageErr(e);return}
+  records=records.filter(x=>x.id!==id);formDirty=false;hideAll();renderAll();
+  toast("Removed",{label:"Undo",fn:async()=>{try{await dbPut(removed);records.push(removed);renderAll();toast("Restored")}catch(e){storageErr(e)}}})}
 
 /* ============ suggestions ============ */
 function openSuggest(){
@@ -744,30 +935,58 @@ function openSuggest(){
     const o=by[a].own.length,w=by[a].want.length,t=o+w,pct=t?Math.round(o/t*100):0;
     const needs=by[a].want.sort((m,n)=>(parseInt(m.year)||0)-(parseInt(n.year)||0)).map(r=>`
       <div class="need"><div class="nt">${esc(r.title||"Untitled")}${r.exclusive?' <span style="color:var(--garnet-2)">★</span>':''}<small>${esc([r.format,r.variant,r.year].filter(Boolean).join(" · "))||"—"}</small></div>
-        <button class="btn" onclick="checkListings('${r.id}')">🔎</button><button class="btn" onclick="quickOwn('${r.id}')">✓ Got it</button></div>`).join("");
+        <button class="btn" onclick="checkListings('${r.id}')" aria-label="Check listings for ${esc(r.title)}">${ic('search')}</button><button class="btn" onclick="quickOwn('${r.id}')" aria-label="Mark ${esc(r.title)} as owned">${ic('check')} Got it</button></div>`).join("");
     return `<div class="sg"><div class="sghead"><span class="nm">${esc(a)}</span><span class="ct">${o} of ${t} on the shelf</span></div>
       <div class="barline"><i style="width:${pct}%"></i></div>
       ${w?needs:`<div class="done">✓ Complete — every saved record for ${esc(a)} is on the shelf.</div>`}</div>`}).join("");
   show("#sgScrim");
 }
-async function quickOwn(id){const r=records.find(x=>x.id===id);if(!r)return;r.status="owned";await dbPut(r);renderAll();openSuggest();toast("Filed on the shelf")}
+async function quickOwn(id){const r=records.find(x=>x.id===id);if(!r)return;const prev=r.status;r.status="owned";
+  try{await dbPut(r)}catch(e){r.status=prev;storageErr(e);return}renderAll();openSuggest();toast("Filed on the shelf")}
 
 /* ============ import / export ============ */
-function exportLib(){const data={app:"stacks",version:1,exported:new Date().toISOString(),records};
+function exportLib(){const data={app:"stacks",version:2,exported:new Date().toISOString(),records};
   const b=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),u=URL.createObjectURL(b),a=document.createElement("a");
   a.href=u;a.download=`stacks-library-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast("Library exported")}
+const impKey=r=>(_norm(r.artist)+"|"+_norm(r.title)+"|"+_norm(r.variant||""));
+/* merge an incoming record into an existing one without clobbering newer edits */
+function mergeRec(a,b){ // a=existing, b=incoming (both normRec'd)
+  const newer=(b.added||0)>(a.added||0)?b:a;
+  const out=Object.assign({},a);
+  ["artist","title","year","format","label","variant","catalog","condMedia","condSleeve","link","notes"].forEach(k=>{
+    if(newer[k])out[k]=newer[k]; else if(!out[k])out[k]=a[k]||b[k];
+  });
+  out.paid=newer.paid!=null?newer.paid:(a.paid!=null?a.paid:b.paid);
+  out.value=newer.value!=null?newer.value:(a.value!=null?a.value:b.value);
+  out.photo=a.photo||b.photo||null; out.art=a.art||b.art||null;
+  out.exclusive=a.exclusive||b.exclusive; out.status=newer.status||a.status;
+  out.tags=[...new Set([...(a.tags||[]),...(b.tags||[])])];
+  out.spins=Math.max(a.spins||0,b.spins||0); out.lastPlayed=Math.max(a.lastPlayed||0,b.lastPlayed||0);
+  out.added=Math.min(a.added||Date.now(),b.added||Date.now()); out.id=a.id;
+  return out;
+}
 function importLib(file){const rd=new FileReader();
-  rd.onload=async()=>{try{const data=JSON.parse(rd.result);const inc=Array.isArray(data)?data:(data.records||[]);
-    if(!inc.length){toast("No records found in that file");return}
-    const key=r=>(r.artist+"|"+r.title+"|"+(r.variant||"")).toLowerCase();
-    const map=new Map(records.map(r=>[key(r),r]));let added=0;
-    for(const r of inc){const rec={id:r.id||uid(),artist:r.artist||"",title:r.title||"",year:r.year||"",format:r.format||"LP",
-      label:r.label||"",variant:r.variant||"",catalog:r.catalog||"",tags:r.tags||[],link:r.link||"",notes:r.notes||"",
-      exclusive:!!r.exclusive,status:r.status==="owned"?"owned":"wishlist",photo:r.photo||null,art:r.art||null,added:r.added||Date.now()};
-      const k=key(rec);if(map.has(k)){const ex=map.get(k);rec.id=ex.id;rec.status=ex.status;rec.photo=ex.photo||rec.photo;rec.art=ex.art||rec.art}else added++;
-      await dbPut(rec);map.set(k,rec)}
-    records=await dbAll();renderAll();hideAll();toast(`Imported — ${added} new, ${inc.length-added} merged`)}
-  catch(e){toast("That file couldn't be read")}};rd.readAsText(file)}
+  rd.onload=async()=>{
+    let data;try{data=JSON.parse(rd.result)}catch(e){toast("That file couldn't be read");return}
+    const raw=Array.isArray(data)?data:(data&&data.records)||[];
+    const inc=(Array.isArray(raw)?raw:[]).map(normRec).filter(Boolean);
+    if(!inc.length){toast("No valid records found in that file");return}
+    const here=new Map(records.map(r=>[impKey(r),r]));
+    let nu=0,up=0;inc.forEach(r=>{here.has(impKey(r))?up++:nu++});
+    const mode=await chooseDialog(`This backup has ${inc.length} record${inc.length>1?"s":""}: ${nu} new, ${up} already in your library.\nMerge keeps everything and fills gaps. Replace swaps your whole library for this file.`,
+      [{label:"Cancel",value:"cancel"},{label:"Replace all",value:"replace",cls:"danger"},{label:"Merge",value:"merge",cls:"primary"}]);
+    if(mode==="cancel"||!mode){toast("Import cancelled");return}
+    let added=0,updated=0,failed=0;
+    if(mode==="replace"){
+      try{await dbClear()}catch(e){storageErr(e);return}records=[];
+      for(const r of inc){try{await dbPut(r);records.push(r);added++}catch(e){failed++}}
+    }else{
+      const m=new Map(records.map(r=>[impKey(r),r]));
+      for(const r of inc){const k=impKey(r),exist=m.get(k),rec=exist?mergeRec(exist,r):r;
+        try{await dbPut(rec);const i=records.findIndex(x=>x.id===rec.id);if(i>=0)records[i]=rec;else records.push(rec);m.set(k,rec);exist?updated++:added++}catch(e){failed++}}
+    }
+    renderAll();hideAll();toast(`Imported — ${added} new, ${updated} updated${failed?`, ${failed} failed`:""}`)};
+  rd.readAsText(file)}
 
 const SAMPLE=[
  {artist:"Stevie Wonder",title:"Talking Book",year:"1972",format:"LP",label:"Tamla",status:"owned",tags:["soul"]},
@@ -777,19 +996,29 @@ const SAMPLE=[
  {artist:"Michael Jackson",title:"Thriller",year:"1982",format:"LP",label:"Epic",variant:"MoFi One-Step",exclusive:true,status:"wishlist",tags:["pop"]},
  {artist:"Whitney Houston",title:"The Bodyguard",year:"1992",format:"LP",label:"Arista",variant:"Smoky-lavender",exclusive:true,status:"wishlist",tags:["soundtrack"]}
 ];
-async function seed(){for(const s of SAMPLE){const rec={id:uid(),added:Date.now()-Math.random()*1e8,photo:null,art:null,catalog:"",variant:s.variant||"",link:"",notes:"",exclusive:!!s.exclusive,...s};await dbPut(rec);records.push(rec)}renderAll();hideAll();toast("Samples added — explore, then clear anytime")}
+async function seed(){for(const s of SAMPLE){const rec=normRec(Object.assign({},s,{added:Date.now()-Math.random()*1e8}));try{await dbPut(rec)}catch(e){}records.push(rec)}renderAll();hideAll();toast("Samples added — explore, then clear anytime")}
 
 /* ============ modal plumbing ============ */
-function show(sel){$$(".scrim").forEach(s=>{if("#"+s.id!==sel)s.hidden=true});$(sel).hidden=false;document.body.style.overflow="hidden"}
-function hideAll(){$$(".scrim").forEach(s=>s.hidden=true);document.body.style.overflow=""}
-function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2600)}
+function focusables(el){return [...el.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(x=>x.offsetParent!==null)}
+function show(sel){if($$(".scrim").every(s=>s.hidden))_lastFocus=document.activeElement; /* remember the trigger only when opening from no modal */
+  $$(".scrim").forEach(s=>{if("#"+s.id!==sel)s.hidden=true});const sc=$(sel);sc.hidden=false;document.body.style.overflow="hidden";
+  setTimeout(()=>{const f=focusables(sc);if(f.length)f[0].focus()},60)}
+function hideAll(){stopScan();$$(".scrim").forEach(s=>s.hidden=true);document.body.style.overflow="";
+  if(_lastFocus&&_lastFocus.focus){try{_lastFocus.focus()}catch(e){}}_lastFocus=null}
+function toast(m,action){const t=$("#toast");t.textContent=m;
+  if(action){const b=document.createElement("button");b.className="toast-act";b.type="button";b.textContent=action.label;b.onclick=()=>{t.classList.remove("show");clearTimeout(t._t);action.fn()};t.appendChild(b)}
+  t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),action?6500:2600)}
 
 /* ============ custom confirm (replaces blocked native confirm) ============ */
 let _cres=null;
-function confirmDialog(msg,yes){return new Promise(res=>{$("#confirmMsg").textContent=msg;$("#confirmYes").textContent=yes||"Delete";$("#confirmScrim").hidden=false;_cres=res})}
+function chooseDialog(msg,buttons){return new Promise(res=>{
+  $("#confirmMsg").textContent=msg;
+  const wrap=$("#confirmBtns");wrap.innerHTML="";
+  buttons.forEach(b=>{const el=document.createElement("button");el.type="button";el.className="btn "+(b.cls||"");el.textContent=b.label;el.onclick=()=>closeConfirm(b.value);wrap.appendChild(el)});
+  $("#confirmScrim").hidden=false;_cres=res;
+  setTimeout(()=>{const f=wrap.querySelector("button");if(f)f.focus()},50)})}
+function confirmDialog(msg,yes){return chooseDialog(msg,[{label:"Cancel",value:false},{label:yes||"Delete",value:true,cls:"danger-solid"}])}
 function closeConfirm(v){$("#confirmScrim").hidden=true;if(_cres){_cres(v);_cres=null}}
-$("#confirmYes").onclick=()=>closeConfirm(true);
-$("#confirmNo").onclick=()=>closeConfirm(false);
 $("#confirmScrim").addEventListener("click",e=>{if(e.target.id==="confirmScrim")closeConfirm(false)});
 
 /* ============ cover art — iTunes (primary, JSONP) + Discogs (fallback) ============ */
@@ -800,86 +1029,264 @@ function jsonp(url){return new Promise((res,rej)=>{const cb="itart_"+Math.random
   window[cb]=d=>{done=true;res(d);cleanup()};
   s.onerror=()=>{cleanup();rej(new Error("network"))};
   s.src=url+(url.includes("?")?"&":"?")+"callback="+cb;document.body.appendChild(s)})}
+/* normalize an artist/title string for fuzzy matching */
+function _norm(s){return (s||"").toLowerCase()
+  .normalize("NFD").replace(/[̀-ͯ]/g,"") // strip accents (beyoncé → beyonce)
+  .replace(/\(.*?\)|\[.*?\]/g," ")          // drop (parenthetical) / [bracketed] qualifiers
+  .replace(/\bfeat\.?\b.*$/," ")            // drop "feat. ..." and everything after
+  .replace(/&/g," and ")
+  .replace(/^the\s+/,"")                     // leading "the"
+  .replace(/[^a-z0-9]+/g," ").trim()}
+/* does the returned artist plausibly match what we asked for? Whole-token comparison only
+   — raw substrings wrongly matched "saul"⊂"sault" and "john"⊂"johnny" (the bug we're fixing). */
+function _artistMatch(want,got){
+  const a=_norm(want),b=_norm(got);if(!a||!b)return false;
+  if(a===b)return true;
+  const A=a.split(" ").filter(Boolean),B=b.split(" ").filter(Boolean);
+  const SA=new Set(A),SB=new Set(B);
+  return A.every(t=>SB.has(t))||B.every(t=>SA.has(t)); // one side's whole tokens ⊆ the other's
+}
+/* iTunes cover — fast & free, but its ranking is popularity-weighted, so verify the
+   artist actually matches before trusting it (this is what caused wrong covers before). */
 async function fetchArtURL(artist,title){
   const term=encodeURIComponent((artist+" "+title).trim());if(!term)return null;
-  const d=await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=1`);
-  const r=((d&&d.results)||[])[0];if(!r||!r.artworkUrl100)return null;
+  const d=await jsonp(`https://itunes.apple.com/search?term=${term}&entity=album&limit=5`);
+  const results=(d&&d.results)||[];if(!results.length)return null;
+  const r=artist?results.find(x=>_artistMatch(artist,x.artistName)):results[0];
+  if(!r||!r.artworkUrl100)return null;        // no artist match → let Discogs try instead
   return r.artworkUrl100.replace(/\/\d+x\d+bb\.(jpg|png|jpeg)/,"/600x600bb.$1");
 }
-/* Discogs cover — fallback for titles iTunes can't match. Works without a token
-   (search → release → image); a Discogs token (Library tools) makes it 1 call & faster. */
+/* Discogs cover — vinyl-specific & verifiable. Works without a token (search → release →
+   image; 25/min); a token (Library tools) returns the image in the search itself (1 call, 60/min). */
 async function discogsArtURL(artist,title){
   const term=encodeURIComponent((artist+" "+title).trim());if(!term)return null;
   const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
   try{
-    const s=await fetch(`https://api.discogs.com/database/search?q=${term}&type=release&format=Vinyl&per_page=3${tk}`).then(x=>x.ok?x.json():null);
-    const hit=((s&&s.results)||[])[0];if(!hit)return null;
-    if(hit.cover_image)return hit.cover_image;          // present only on authenticated search
+    const s=await fetch(`https://api.discogs.com/database/search?q=${term}&type=release&format=Vinyl&per_page=5${tk}`).then(x=>x.ok?x.json():null);
+    const results=(s&&s.results)||[];if(!results.length)return null;
+    // each result title is "Artist - Title"; prefer one whose artist matches, else the top hit
+    const hit=(artist&&results.find(x=>_artistMatch(artist,(x.title||"").split(" - ")[0])))||results[0];
+    if(hit.cover_image)return hit.cover_image;          // populated only on token search
     if(!hit.id)return null;
     const rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null);
     const imgs=(rel&&rel.images)||[];const pick=imgs.find(im=>im.type==="primary")||imgs[0];
     return pick&&pick.uri?pick.uri:null;
   }catch(e){return null}
 }
-/* resolve a cover: iTunes first (fast, free), then Discogs */
+/* resolve a cover. With a token saved, Discogs is the most vinyl-accurate, so go there
+   first; otherwise iTunes first (fast, free, now artist-verified) then Discogs.
+   Returns {url, via} so callers can pace Discogs' rate limit correctly. */
 async function findCover(artist,title){
-  let u=null;try{u=await fetchArtURL(artist,title)}catch(e){}
-  if(u)return u;
-  try{u=await discogsArtURL(artist,title)}catch(e){}
-  return u||null;
+  const order=settings.discogsToken
+    ?[["discogs",discogsArtURL],["itunes",fetchArtURL]]
+    :[["itunes",fetchArtURL],["discogs",discogsArtURL]];
+  for(const [via,fn] of order){
+    let u=null;try{u=await fn(artist,title)}catch(e){}
+    if(u)return {url:u,via};
+  }
+  return {url:null,via:null};
 }
 async function getArt(id){const r=records.find(x=>x.id===id);if(!r)return;toast("Searching cover art…");
-  try{const url=await findCover(r.artist,r.title);if(!url){toast("No cover art found for that title");return}
+  try{const {url}=await findCover(r.artist,r.title);if(!url){toast("No cover art found for that title");return}
     r.art=url;await dbPut(r);renderAll();openDetail(id);toast("Cover art added")}
   catch(e){toast("Couldn't reach the art service — try again")}}
+/* per-record override: force a Discogs pull, skipping iTunes — for when iTunes was wrong */
+async function getArtFromDiscogs(id){const r=records.find(x=>x.id===id);if(!r)return;toast("Searching Discogs…");
+  try{const url=await discogsArtURL(r.artist,r.title);
+    if(!url){toast(settings.discogsToken?"No Discogs vinyl match for that title":"No Discogs match — a token may help");return}
+    r.art=url;await dbPut(r);renderAll();openDetail(id);toast("Cover updated from Discogs")}
+  catch(e){toast("Couldn't reach Discogs — try again")}}
 async function findArtForForm(){
   const a=$("#f-artist").value.trim(),t=$("#f-title").value.trim();
   if(!a&&!t){toast("Enter an artist or title first");return}
   const b=$("#findArtBtn"),old=b.innerHTML;b.innerHTML='<span class="spin-mini"></span> Searching…';b.disabled=true;
-  try{const url=await findCover(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
+  try{const {url}=await findCover(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
   catch(e){toast("Couldn't reach the art service")}finally{b.innerHTML=old;b.disabled=false}}
 async function fetchArtBulk(){
   const list=records.filter(r=>!r.photo&&!r.art&&(r.artist||r.title));
   if(!list.length){toast("Every record already has artwork");return}
-  hideAll();const total=list.length;let n=0,i=0,dg=0;
-  for(const r of list){i++;toast(`Fetching covers… ${i}/${total} — ${n} found`);
-    let url=null;
-    try{url=await fetchArtURL(r.artist,r.title)}catch(e){}                 // iTunes (fast)
-    if(!url){try{url=await discogsArtURL(r.artist,r.title)}catch(e){}if(url)dg++;
-      await new Promise(s=>setTimeout(s,settings.discogsToken?1500:5000))} // Discogs rate limits: pace it
-    if(url){r.art=url;await dbPut(r);n++;if(n%6===0)renderLibrary()}
-    await new Promise(s=>setTimeout(s,350))}
-  renderAll();const miss=total-n,via=dg?` (${dg} via Discogs)`:"";
-  toast(miss?`Added ${n} covers${via} — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records${via}`)}
+  hideAll();const total=list.length,hasTk=!!settings.discogsToken;let n=0,i=0,dg=0;
+  bulkCancel=false;$("#bulkCancelBtn").textContent="Cancel";$("#bulkPanel").hidden=false;
+  for(const r of list){if(bulkCancel)break;i++;
+    $("#bulkText").textContent=`Fetching… ${i}/${total} — ${n} found`;$("#bulkBar").style.width=Math.round(i/total*100)+"%";
+    let res={url:null,via:null};try{res=await findCover(r.artist,r.title)}catch(e){}
+    if(res.url){const live=records.find(x=>x.id===r.id); // re-read in case it was edited mid-run
+      if(live){live.art=res.url;try{await dbPut(live);n++;if(res.via==="discogs")dg++;if(n%6===0)renderLibrary(false)}catch(e){}}}
+    // pace for Discogs rate limits: token search = 1 call/record (60/min); anon fallback = 2 calls (25/min)
+    await new Promise(s=>setTimeout(s, hasTk?1200 : (res.via==="discogs"?5000:350)));}
+  $("#bulkPanel").hidden=true;renderAll();const miss=total-n,via=dg?` (${dg} via Discogs)`:"";
+  toast(bulkCancel?`Stopped — added ${n} cover${n!==1?"s":""}${via}`:(miss?`Added ${n} covers${via} — ${miss} not found (run again to retry)`:`Added cover art to all ${n} records${via}`))}
+
+/* ============ filters, batch select, insights, duplicates, scan ============ */
+function clearFilters(){state.q="";state.status="all";state.format="all";state.artist="all";state.exc=false;
+  $("#search").value="";$$("#statusSeg button").forEach(x=>{const on=x.dataset.f==="all";x.classList.toggle("on",on);x.setAttribute("aria-current",on?"true":"false")});
+  $("#excChip").classList.remove("on");$("#excChip").setAttribute("aria-pressed","false");$("#formatSel").value="all";renderAll()}
+
+function setSelectMode(on){state.select=on;if(!on)selected.clear();
+  $("#selChip").classList.toggle("on",on);$("#selChip").setAttribute("aria-pressed",String(on));renderSelBar();renderLibrary(false)}
+function toggleSelect(id){selected.has(id)?selected.delete(id):selected.add(id);renderSelBar();renderLibrary(false)}
+function renderSelBar(){const bar=$("#selBar");if(!state.select||!selected.size){bar.hidden=true;return}$("#selCount").textContent=`${selected.size} selected`;bar.hidden=false}
+async function batchStatus(st){if(!selected.size)return;let f=0;
+  for(const id of selected){const r=records.find(x=>x.id===id);if(!r)continue;const prev=r.status;r.status=st;try{await dbPut(r)}catch(e){r.status=prev;f++}}
+  const done=selected.size-f;renderAll();renderSelBar();toast(`${done} moved to ${st==="owned"?"the shelf":"wanted"}${f?` · ${f} failed`:""}`)}
+async function batchDelete(){if(!selected.size)return;const ok=await confirmDialog(`Delete ${selected.size} selected record${selected.size>1?"s":""}?`,"Delete");if(!ok)return;
+  const ids=[...selected],removed=[],fails=[];
+  for(const id of ids){const r=records.find(x=>x.id===id);try{await dbDel(id);if(r)removed.push(r)}catch(e){fails.push(id)}}
+  const del=new Set(removed.map(r=>r.id));records=records.filter(x=>!del.has(x.id));selected.clear();setSelectMode(false);renderAll();
+  toast(`Deleted ${removed.length}${fails.length?` · ${fails.length} failed`:""}`,removed.length?{label:"Undo",fn:async()=>{for(const r of removed){try{await dbPut(r);records.push(r)}catch(e){}}renderAll();toast("Restored")}}:null)}
+async function batchTag(){if(!selected.size)return;const tag=await promptDialog(`Add a tag to ${selected.size} record${selected.size>1?"s":""}:`,"e.g. reissue");if(!tag)return;
+  let f=0;for(const id of selected){const r=records.find(x=>x.id===id);if(!r)continue;if(!r.tags.includes(tag))r.tags=[...r.tags,tag];try{await dbPut(r)}catch(e){f++}}
+  renderAll();toast(`Tagged ${selected.size-f}${f?` · ${f} failed`:""}`)}
+
+function promptDialog(msg,placeholder){return new Promise(res=>{
+  const modal=$("#confirmScrim .cmodal");$("#confirmMsg").textContent=msg;
+  const wrap=$("#confirmBtns");wrap.innerHTML="";
+  let inp=modal.querySelector(".prompt-inp");
+  if(!inp){inp=document.createElement("input");inp.type="text";inp.className="prompt-inp";
+    inp.style.cssText="width:100%;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;color:var(--ink);outline:none;margin-bottom:16px";
+    modal.insertBefore(inp,wrap)}
+  inp.value="";inp.placeholder=placeholder||"";inp.style.display="";
+  const finish=v=>{inp.style.display="none";closeConfirm(v)};
+  const cancel=document.createElement("button");cancel.type="button";cancel.className="btn";cancel.textContent="Cancel";cancel.onclick=()=>finish(null);
+  const ok=document.createElement("button");ok.type="button";ok.className="btn primary";ok.textContent="Add";ok.onclick=()=>finish(inp.value.trim()||null);
+  wrap.appendChild(cancel);wrap.appendChild(ok);
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();finish(inp.value.trim()||null)}};
+  $("#confirmScrim").hidden=false;_cres=res;setTimeout(()=>inp.focus(),50)})}
+
+function openInsights(){
+  const rs=records;if(!rs.length){toast("Add records first");return}
+  const own=rs.filter(r=>r.status==="owned").length;
+  const val=rs.reduce((a,r)=>a+(r.value||0),0),spent=rs.reduce((a,r)=>a+(r.paid||0),0),spins=rs.reduce((a,r)=>a+(r.spins||0),0);
+  const tally=fn=>{const m={};rs.forEach(r=>{const k=fn(r);if(k==null||k==="")return;m[k]=(m[k]||0)+1});return m};
+  const bars=(obj,max,byVal)=>{let e=Object.entries(obj);e.sort(byVal?(a,b)=>b[1]-a[1]:(a,b)=>a[0].localeCompare(b[0]));e=e.slice(0,max);
+    const mx=Math.max(1,...e.map(x=>x[1]));
+    return e.map(([k,v])=>`<div class="insrow"><span class="lab" title="${esc(k)}">${esc(k)}</span><span class="bar"><i style="width:${Math.round(v/mx*100)}%"></i></span><span class="v">${v}</span></div>`).join("")||'<p style="color:var(--ink-3);font-size:13px;margin:0">No data yet</p>'}
+  const decades=tally(r=>{const y=parseInt(r.year);return y?Math.floor(y/10)*10+"s":"Unknown"});
+  const formats=tally(r=>r.format),labels=tally(r=>r.label),tags={};rs.forEach(r=>(r.tags||[]).forEach(t=>tags[t]=(tags[t]||0)+1));
+  const mostSpun=rs.filter(r=>r.spins>0).sort((a,b)=>b.spins-a.spins).slice(0,5);
+  const years=rs.map(r=>parseInt(r.year)).filter(Boolean);
+  $("#insightsBody").innerHTML=`
+    <div class="insbig">
+      <div class="b"><div class="n">${rs.length}</div><div class="l">Records</div></div>
+      <div class="b"><div class="n">${own}</div><div class="l">On shelf</div></div>
+      <div class="b"><div class="n">${spins}</div><div class="l">Total spins</div></div>
+      ${val>0?`<div class="b"><div class="n">${esc(money(Math.round(val)))}</div><div class="l">Est. value</div></div>`:""}
+      ${spent>0?`<div class="b"><div class="n">${esc(money(Math.round(spent)))}</div><div class="l">Total spent</div></div>`:""}
+      ${years.length?`<div class="b"><div class="n">${Math.min(...years)}–${Math.max(...years)}</div><div class="l">Year range</div></div>`:""}
+    </div>
+    <div class="insgrid">
+      <div class="inscard"><h4>By decade</h4>${bars(decades,12,false)}</div>
+      <div class="inscard"><h4>By format</h4>${bars(formats,12,true)}</div>
+      <div class="inscard"><h4>Top labels</h4>${bars(labels,8,true)}</div>
+      <div class="inscard"><h4>Top tags</h4>${bars(tags,8,true)}</div>
+      ${mostSpun.length?`<div class="inscard"><h4>Most spun</h4>${mostSpun.map(r=>`<div class="insrow"><span class="lab" style="width:auto;flex:1" title="${esc((r.artist||"")+" – "+(r.title||""))}">${esc(r.title||"—")}</span><span class="v">${r.spins}×</span></div>`).join("")}</div>`:""}
+    </div>`;
+  show("#insightsScrim");
+}
+
+function openDuplicates(){
+  const groups={};records.forEach(r=>{const k=_norm(r.artist)+"|"+_norm(r.title);if(k==="|")return;(groups[k]=groups[k]||[]).push(r)});
+  const dups=Object.values(groups).filter(g=>g.length>1);
+  $("#dupBody").innerHTML=dups.length?dups.map(g=>`
+    <div class="dupgrp"><div class="dh">${esc(g[0].artist||"—")} – ${esc(g[0].title||"Untitled")} <span style="color:var(--ink-3)">×${g.length}</span></div>
+      ${g.map(r=>`<div class="dupitem"><span class="di">${esc([r.format,r.variant,r.year].filter(Boolean).join(" · ")||"—")} · ${r.status==="owned"?"on shelf":"wanted"}</span><button class="btn" onclick="hideAll();openDetail('${r.id}')">Open</button></div>`).join("")}
+    </div>`).join(""):`<div class="empty" style="padding:30px 10px"><h2>No duplicates</h2><p>Every record looks unique by artist + title.</p></div>`;
+  show("#dupScrim");
+}
+
+/* ---- barcode scan (BarcodeDetector over camera; manual entry fallback) ---- */
+let _scanStream=null,_scanRAF=0,_scanDet=null;
+function openScan(){$("#scanInput").value="";$("#scanMsg").textContent="Point the camera at the barcode on the back cover. No camera? Type the number below.";show("#scanScrim");startScan()}
+async function startScan(){
+  if(!("BarcodeDetector"in window)||!navigator.mediaDevices){$("#scanWrap").style.display="none";return}
+  try{
+    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+    const v=$("#scanVideo");v.srcObject=_scanStream;await v.play();$("#scanWrap").style.display="";
+    _scanDet=new window.BarcodeDetector({formats:["ean_13","upc_a","ean_8","upc_e","code_128"]});
+    const tick=async()=>{if(!_scanStream)return;
+      try{const codes=await _scanDet.detect(v);if(codes&&codes.length){const code=codes[0].rawValue;stopScanCam();$("#scanInput").value=code;lookupBarcode(code);return}}catch(e){}
+      _scanRAF=requestAnimationFrame(tick)};
+    _scanRAF=requestAnimationFrame(tick);
+  }catch(e){$("#scanWrap").style.display="none";$("#scanMsg").textContent="Camera unavailable — type the barcode number below."}
+}
+function stopScanCam(){if(_scanRAF)cancelAnimationFrame(_scanRAF);_scanRAF=0;if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null}const v=$("#scanVideo");if(v)v.srcObject=null}
+function stopScan(){stopScanCam()}
+function setFormat(fmt){const sel=$("#f-format"),f=String(fmt||"").toLowerCase();const opt=[...sel.options].find(o=>o.value.toLowerCase()===f);sel.value=opt?opt.value:"LP"}
+async function lookupBarcode(code){code=(code||"").trim();if(!code){toast("Enter a barcode number");return}
+  $("#scanMsg").textContent="Looking up "+code+"…";
+  const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
+  try{
+    const s=await fetch(`https://api.discogs.com/database/search?barcode=${encodeURIComponent(code)}&type=release${tk}`).then(x=>x.ok?x.json():null);
+    const hit=((s&&s.results)||[])[0];
+    if(!hit){$("#scanMsg").textContent="No match for that barcode. Try again or enter the record manually.";return}
+    let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null)}catch(e){}
+    const tparts=(hit.title||"").split(" - ");
+    const artist=rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:"");
+    const title=rel?rel.title:(tparts.length>1?tparts.slice(1).join(" - "):tparts[0]);
+    const fmt=(rel&&rel.formats&&rel.formats[0]&&rel.formats[0].name)||(Array.isArray(hit.format)?hit.format[0]:"")||"LP";
+    const year=(rel&&rel.year)||hit.year||"";
+    const label=(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].name)||(Array.isArray(hit.label)?hit.label[0]:"")||"";
+    const catno=(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].catno)||hit.catno||"";
+    const cover=hit.cover_image||((rel&&rel.images&&(rel.images.find(i=>i.type==="primary")||rel.images[0]))||{}).uri||"";
+    stopScan();openForm();
+    $("#f-artist").value=artist||"";$("#f-title").value=title||"";$("#f-year").value=year?String(year):"";
+    setFormat(fmt);$("#f-label").value=label||"";$("#f-cat").value=catno||"";
+    if(cover){editingArt=cover;renderArtChip()}
+    formDirty=true;toast("Found — review the details and save");
+  }catch(e){$("#scanMsg").textContent="Couldn't reach Discogs. Check your connection and try again."}
+}
+
+/* form: don't silently throw away a filled-in record on an accidental dismiss */
+async function attemptClose(){
+  if(!$("#formScrim").hidden&&formDirty){const ok=await confirmDialog("Discard this record? Your changes won't be saved.","Discard");if(!ok)return}
+  hideAll();
+}
 
 /* ============ events ============ */
 document.addEventListener("click",e=>{
-  if(e.target.closest("[data-close]"))hideAll();
-  const card=e.target.closest(".rec");if(card)openDetail(card.dataset.id);
-  const spine=e.target.closest(".spine");if(spine)openDetail(spine.dataset.id);
-  const sc=e.target.closest(".scrim");if(sc&&e.target===sc)hideAll();
+  if(e.target.closest("[data-close]")){attemptClose();return}
+  const tile=e.target.closest(".rec")||e.target.closest(".spine");
+  if(tile){if(state.select)toggleSelect(tile.dataset.id);else openDetail(tile.dataset.id);return}
+  const sc=e.target.closest(".scrim");if(sc&&e.target===sc)attemptClose();
 });
-document.addEventListener("keydown",e=>{if(e.key==="Escape")hideAll();
-  if(e.key==="Enter"&&e.target.classList&&e.target.classList.contains("rec"))openDetail(e.target.dataset.id)});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){if(!$("#confirmScrim").hidden){closeConfirm(false);return}attemptClose();return}
+  if(e.key==="Tab"){const open=[...$$(".scrim"),$("#confirmScrim")].filter(s=>s&&!s.hidden).pop();
+    if(open){const f=focusables(open);if(f.length){const first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}}
+    return}
+  const t=e.target;
+  if((e.key==="Enter"||e.key===" ")&&t.classList&&(t.classList.contains("rec")||t.classList.contains("spine"))){e.preventDefault();if(state.select)toggleSelect(t.dataset.id);else openDetail(t.dataset.id)}
+});
 $("#addBtn").onclick=()=>openForm();
 $("#saveBtn").onclick=saveForm;$("#deleteBtn").onclick=deleteRec;$("#suggestBtn").onclick=openSuggest;
-$("#menuBtn").onclick=()=>{$("#discogsToken").value=settings.discogsToken||"";show("#menuScrim")};
+$("#menuBtn").onclick=()=>{$("#discogsToken").value=settings.discogsToken||"";$("#currencySym").value=settings.currency||"";show("#menuScrim")};
 $("#statusToggle").onclick=e=>{const b=e.target.closest("button");if(b)setStatus(b.dataset.v)};
-$("#photodrop").onclick=e=>{if(e.target.id==="rmPhoto"){editingPhoto=null;renderPhoto();return}$("#f-photofile").click()};
-$("#f-photofile").onchange=async e=>{const f=e.target.files[0];if(!f)return;toast("Processing photo…");try{editingPhoto=await compress(f);renderPhoto()}catch{toast("Couldn't read that image")}};
-$("#search").oninput=e=>{state.q=e.target.value;renderLibrary()};
-$("#statusSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;state.status=b.dataset.f;$$("#statusSeg button").forEach(x=>x.classList.toggle("on",x===b));renderLibrary()};
-$("#excChip").onclick=()=>{state.exc=!state.exc;$("#excChip").classList.toggle("on",state.exc);renderLibrary()};
-$("#formatSel").onchange=e=>{state.format=e.target.value;renderLibrary()};
-$("#sortSel").onchange=e=>{state.sort=e.target.value;renderLibrary()};
-$("#viewToggle").onclick=e=>{const b=e.target.closest("button");if(!b)return;state.view=b.dataset.v;$$("#viewToggle button").forEach(x=>x.classList.toggle("on",x===b));renderLibrary()};
-$("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;state.artist=b.dataset.art;renderFilters();renderLibrary()};
+$("#photodrop").onclick=e=>{if(e.target.id==="rmPhoto"){editingPhoto=null;formDirty=true;renderPhoto();return}$("#f-photofile").click()};
+$("#f-photofile").onchange=async e=>{const f=e.target.files[0];if(!f)return;toast("Processing photo…");try{editingPhoto=await compress(f);formDirty=true;renderPhoto()}catch{toast("Couldn't read that image")}};
+$("#formScrim").addEventListener("input",()=>{formDirty=true});
+$("#search").oninput=e=>{state.q=e.target.value;clearTimeout(_searchT);_searchT=setTimeout(()=>renderLibrary(false),150)};
+$("#statusSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;state.status=b.dataset.f;$$("#statusSeg button").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-current",x===b?"true":"false")});renderLibrary(false)};
+$("#excChip").onclick=()=>{state.exc=!state.exc;$("#excChip").classList.toggle("on",state.exc);$("#excChip").setAttribute("aria-pressed",String(state.exc));renderLibrary(false)};
+$("#selChip").onclick=()=>setSelectMode(!state.select);
+$("#selOwn").onclick=()=>batchStatus("owned");$("#selWant").onclick=()=>batchStatus("wishlist");
+$("#selTag").onclick=batchTag;$("#selDel").onclick=batchDelete;$("#selDone").onclick=()=>setSelectMode(false);
+$("#formatSel").onchange=e=>{state.format=e.target.value;renderLibrary(false)};
+$("#sortSel").onchange=e=>{state.sort=e.target.value;renderLibrary(true)};
+$("#viewToggle").onclick=e=>{const b=e.target.closest("button");if(!b)return;state.view=b.dataset.v;$$("#viewToggle button").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-current",x===b?"true":"false")});renderLibrary(true)};
+$("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;state.artist=b.dataset.art;renderFilters();renderLibrary(true)};
 $("#exportBtn").onclick=exportLib;$("#importBtn").onclick=()=>$("#importFile").click();
-$("#importFile").onchange=e=>{if(e.target.files[0])importLib(e.target.files[0])};
+$("#importFile").onchange=e=>{if(e.target.files[0])importLib(e.target.files[0]);e.target.value=""};
 $("#seedBtn").onclick=seed;
 $("#findArtBtn").onclick=findArtForForm;
-$("#removeArtBtn").onclick=()=>{editingArt=null;renderArtChip();};
+$("#removeArtBtn").onclick=()=>{editingArt=null;formDirty=true;renderArtChip();};
 $("#artBulkBtn").onclick=fetchArtBulk;
+$("#bulkCancelBtn").onclick=()=>{bulkCancel=true;$("#bulkCancelBtn").textContent="Stopping…"};
+$("#insightsBtn").onclick=openInsights;$("#dupBtn").onclick=openDuplicates;
+$("#scanBtn").onclick=openScan;$("#scanLookup").onclick=()=>lookupBarcode($("#scanInput").value);
+$("#scanInput").onkeydown=e=>{if(e.key==="Enter")lookupBarcode($("#scanInput").value)};
+$("#currencySym").onchange=e=>{settings.currency=e.target.value.trim();saveSettings();renderAll();toast("Currency updated")};
 /* if a fetched cover URL fails to load (e.g. offline), fall back to the designed sleeve */
 document.addEventListener("error",e=>{const img=e.target;
   if(img&&img.tagName==="IMG"&&img.dataset&&img.dataset.cover){const r=records.find(x=>x.id===img.dataset.cover);
@@ -889,6 +1296,7 @@ $("#discogsToken").onchange=e=>{settings.discogsToken=e.target.value.trim();loca
 /* 3D tilt on jackets (pointer) */
 let raf=0;
 document.addEventListener("pointermove",e=>{
+  if(reduceMotion)return;
   if(state.view!=="shelf")return;
   if(e.pointerType&&e.pointerType!=="mouse")return;
   const jw=e.target.closest&&e.target.closest(".jw");
@@ -899,6 +1307,18 @@ document.addEventListener("pointermove",e=>{
 },{passive:true});
 document.addEventListener("pointerout",e=>{const jw=e.target.closest&&e.target.closest(".jw");if(jw){const j=jw.querySelector(".jacket");if(j)j.style.transform=""}},{passive:true});
 
+/* swipe the detail sheet: down to dismiss, left/right to move between records */
+function navDetail(dir){if(!detailId)return;const list=visible(),i=list.findIndex(r=>r.id===detailId);if(i<0)return;const nx=list[i+dir];if(nx)openDetail(nx.id)}
+(function(){const modal=$("#detailScrim .modal");if(!modal)return;let sx=0,sy=0,active=false;
+  modal.addEventListener("touchstart",e=>{if(e.touches.length!==1){active=false;return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;active=true;modal.style.transition="none"},{passive:true});
+  modal.addEventListener("touchmove",e=>{if(!active)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+    if(dy>0&&Math.abs(dy)>Math.abs(dx)){modal.style.transform=`translateY(${dy}px)`;modal.style.opacity=String(Math.max(.4,1-dy/500))}},{passive:true});
+  modal.addEventListener("touchend",e=>{if(!active)return;active=false;const t=(e.changedTouches&&e.changedTouches[0])||{},dx=(t.clientX||sx)-sx,dy=(t.clientY||sy)-sy;
+    modal.style.transition="";modal.style.transform="";modal.style.opacity="";
+    if(dy>120&&Math.abs(dy)>Math.abs(dx)){hideAll();return}
+    if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)*1.5)navDetail(dx<0?1:-1)},{passive:true});
+})();
+
 /* PWA install */
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;
@@ -908,12 +1328,19 @@ async function doInstall(){if(!deferredPrompt)return;deferredPrompt.prompt();awa
 $("#installBtn").onclick=doInstall;$("#installBtn2").onclick=doInstall;
 $("#installX").onclick=()=>{$("#installBanner").hidden=true;localStorage.setItem("stacks-install-x","1")};
 window.addEventListener("appinstalled",()=>{$("#installBanner").hidden=true;toast("Stacks installed 🎉")});
+/* iOS never fires beforeinstallprompt — show a one-time Add-to-Home-Screen hint */
+(function(){const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent),standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+  if(isIOS&&!standalone&&!localStorage.getItem("stacks-install-x")){$("#installBanner .t").innerHTML="<b>Install Stacks</b><br>Tap Share, then “Add to Home Screen”.";$("#installBtn").style.display="none";$("#installBanner").hidden=false}})();
 
-window.openForm=openForm;window.openDetail=openDetail;window.checkListings=checkListings;window.toggleStatus=toggleStatus;window.quickOwn=quickOwn;window.seed=seed;window.getArt=getArt;
+window.openForm=openForm;window.openDetail=openDetail;window.checkListings=checkListings;window.toggleStatus=toggleStatus;window.quickOwn=quickOwn;window.seed=seed;window.getArt=getArt;window.getArtFromDiscogs=getArtFromDiscogs;window.clearFilters=clearFilters;window.hideAll=hideAll;
 
-/* service worker (only over http/https) */
+/* service worker (only over http/https) — prompt to reload when a new version installs */
 if("serviceWorker"in navigator&&location.protocol.startsWith("http")){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{const nw=reg.installing;if(!nw)return;
+      nw.addEventListener("statechange",()=>{if(nw.state==="installed"&&navigator.serviceWorker.controller)
+        toast("Update available — reload",{label:"Reload",fn:()=>location.reload()})})});
+  }).catch(()=>{})})}
 
 /* boot */
 (async()=>{try{records=await dbAll()}catch(e){records=[]}renderAll()})();
