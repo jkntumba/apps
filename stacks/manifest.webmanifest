@@ -1,0 +1,17 @@
+{
+  "name": "Stacks — Vinyl Library",
+  "short_name": "Stacks",
+  "description": "A turntable for your eyes: file, sleeve, photograph and complete your vinyl collection.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#14100e",
+  "theme_color": "#14100e",
+  "categories": ["music", "lifestyle", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-mask.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
