@@ -1,7 +1,7 @@
 /* Stacks service worker — network-first app shell + runtime cover-image cache (offline-friendly) */
-const CACHE = "stacks-v6", IMG_CACHE = "stacks-img-v1", IMG_CAP = 600;
+const CACHE = "stacks-v7", IMG_CACHE = "stacks-img-v1", IMG_CAP = 600;
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-512-mask.png"];
-const IMG_HOSTS = ["i.discogs.com", "mzstatic.com"]; // album-cover CDNs (Discogs + iTunes)
+const IMG_HOSTS = ["i.discogs.com", "mzstatic.com", "coverartarchive.org"]; // album-cover CDNs (Discogs + iTunes + MusicBrainz/Cover Art Archive)
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -23,7 +23,7 @@ self.addEventListener("fetch", e => {
   let url; try { url = new URL(req.url); } catch (_) { return; }
 
   // never cache live API calls — always hit the network
-  if (url.hostname === "api.discogs.com" || url.hostname.includes("ebay.com") || url.hostname.includes("itunes.apple.com")) return;
+  if (url.hostname === "api.discogs.com" || url.hostname.includes("ebay.com") || url.hostname.includes("itunes.apple.com") || url.hostname.endsWith("musicbrainz.org")) return;
 
   // cover images (cross-origin CDNs) — cache-first so they survive offline; size-capped
   if (req.destination === "image" && IMG_HOSTS.some(h => url.hostname.endsWith(h))) {

@@ -37,7 +37,7 @@ Double-click `index.html`. Works fully offline. (Install prompts need hosting �
 
 ## What you can do
 - File records with condition grades (media + sleeve), price paid & estimated value, tags, pressing/variant, a photo of your copy, and owned/wanted status.
-- **Scan a barcode** (form → "Scan barcode") to auto-fill from Discogs, or fetch real covers (iTunes + Discogs; add a token in Library tools for the best vinyl matches).
+- **Scan a barcode** (form → "Scan barcode") to auto-fill the record. It checks Discogs first (best for vinyl, needs a token) and falls back to MusicBrainz — a free, no-token catalog that lists physical UPC/EAN barcodes — so records bought off Discogs (Amazon, in person) still populate, cover and all. Or fetch real covers separately (iTunes + Discogs; add a token in Library tools for the best vinyl matches).
 - See the shape of your collection in **Insights** (decade/format/label/tag, value, spins), spot repeats with **Find duplicates**, and edit in bulk with **Select** mode.
 - Browse as a shelf or a crate of spines; the turntable logs each spin and shows what you play most.
 

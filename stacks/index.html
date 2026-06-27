@@ -1283,29 +1283,90 @@ async function startScan(){
 }
 function stopScanCam(){if(_scanRAF)cancelAnimationFrame(_scanRAF);_scanRAF=0;if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null}const v=$("#scanVideo");if(v)v.srcObject=null}
 function stopScan(){stopScanCam()}
-function setFormat(fmt){const sel=$("#f-format"),f=String(fmt||"").toLowerCase();const opt=[...sel.options].find(o=>o.value.toLowerCase()===f);sel.value=opt?opt.value:"LP"}
-async function lookupBarcode(code){code=(code||"").trim();if(!code){toast("Enter a barcode number");return}
+/* map a Discogs/MusicBrainz format string onto the form's format options (else default LP) */
+function setFormat(fmt){const sel=$("#f-format");let f=String(fmt||"").trim();
+  const mx=f.match(/^(\d+)\s*[x×]\s*(?:lp|vinyl)\b/i);
+  if(mx)f=mx[1]+"×LP";
+  else{const fl=f.toLowerCase();
+    if(/^(?:12"?\s*vinyl|vinyl|lp|album)$/.test(fl))f="LP";
+    else if(/^7"?(?:\s*vinyl)?$/.test(fl))f='7"';
+    else if(/^10"?(?:\s*vinyl)?$/.test(fl))f='10"';
+    else if(/^12"$|12"\s*single|maxi/.test(fl))f='12" Single';
+    else if(/box/.test(fl))f="Box set";
+    else if(/picture/.test(fl))f="Picture disc";
+    else if(/^ep$/.test(fl))f="EP";}
+  const opt=[...sel.options].find(o=>o.value.toLowerCase()===f.toLowerCase());sel.value=opt?opt.value:"LP"}
+
+/* ---- barcode → release lookup across multiple catalogs ----
+   Discogs first (most accurate for vinyl, but needs a token and misses records bought
+   off-platform), then MusicBrainz (free, no token, indexes physical UPC/EAN barcodes) so
+   vinyl picked up on Amazon / in person still auto-fills. Each helper returns a normalized
+   record {artist,title,year,format,label,catno,cover,via} or null (no match); a thrown error
+   means the service was unreachable, which lets the next source still get a shot. */
+async function lookupBarcodeDiscogs(code){
+  if(!settings.discogsToken)return null; // Discogs search requires auth — skip cleanly when token-less
+  const tk="&token="+encodeURIComponent(settings.discogsToken);
+  const s=await fetch(`https://api.discogs.com/database/search?barcode=${encodeURIComponent(code)}&type=release${tk}`).then(x=>x.ok?x.json():null);
+  const hit=((s&&s.results)||[])[0];
+  if(!hit)return null;
+  let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}?${tk.slice(1)}`).then(x=>x.ok?x.json():null)}catch(e){}
+  const tparts=(hit.title||"").split(" - ");
+  return {
+    artist:rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:""),
+    title:rel?rel.title:(tparts.length>1?tparts.slice(1).join(" - "):tparts[0]),
+    year:(rel&&rel.year)||hit.year||"",
+    format:(rel&&rel.formats&&rel.formats[0]&&rel.formats[0].name)||(Array.isArray(hit.format)?hit.format[0]:"")||"LP",
+    label:(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].name)||(Array.isArray(hit.label)?hit.label[0]:"")||"",
+    catno:(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].catno)||hit.catno||"",
+    cover:hit.cover_image||((rel&&rel.images&&(rel.images.find(i=>i.type==="primary")||rel.images[0]))||{}).uri||"",
+    via:"discogs"};
+}
+async function lookupBarcodeMusicBrainz(code){
+  // free, keyless, CORS-enabled; physical releases are indexed by their printed barcode
+  const d=await fetch(`https://musicbrainz.org/ws/2/release?query=barcode:${encodeURIComponent(code)}&fmt=json&limit=12`).then(x=>x.ok?x.json():null);
+  const rels=(d&&d.releases)||[];
+  if(!rels.length)return null;
+  const isVinyl=r=>(r.media||[]).some(m=>/vinyl|lp/i.test(m.format||""));
+  rels.sort((a,b)=>(isVinyl(b)-isVinyl(a))||((b.score||0)-(a.score||0))); // prefer a vinyl pressing, then best match
+  const r=rels[0];
+  const artist=(r["artist-credit"]||[]).map(a=>(a.name||(a.artist&&a.artist.name)||"")+(a.joinphrase||"")).join("").trim();
+  const li=(r["label-info"]||[])[0]||{};
+  const vinyl=(r.media||[]).filter(m=>/vinyl|lp/i.test(m.format||"")).length;
+  const out={
+    artist,
+    title:r.title||"",
+    year:(r.date||"").slice(0,4),
+    format:vinyl>1?vinyl+"×LP":(((r.media||[])[0])||{}).format||"",
+    label:(li.label&&li.label.name)||"",
+    catno:li["catalog-number"]||"",
+    cover:"",
+    via:"musicbrainz"};
+  // cover from the Cover Art Archive (404s when a release has no art) — verify before keeping it
+  const tryCover=async u=>{try{return (await fetch(u)).ok?u:""}catch(e){return ""}};
+  out.cover=await tryCover(`https://coverartarchive.org/release/${r.id}/front-500`);
+  if(!out.cover&&r["release-group"]&&r["release-group"].id)
+    out.cover=await tryCover(`https://coverartarchive.org/release-group/${r["release-group"].id}/front-500`);
+  return out;
+}
+async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(!code){toast("Enter a barcode number");return}
   $("#scanMsg").textContent="Looking up "+code+"…";
-  const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
-  try{
-    const s=await fetch(`https://api.discogs.com/database/search?barcode=${encodeURIComponent(code)}&type=release${tk}`).then(x=>x.ok?x.json():null);
-    const hit=((s&&s.results)||[])[0];
-    if(!hit){$("#scanMsg").textContent="No match for that barcode. Try again or enter the record manually.";return}
-    let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null)}catch(e){}
-    const tparts=(hit.title||"").split(" - ");
-    const artist=rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:"");
-    const title=rel?rel.title:(tparts.length>1?tparts.slice(1).join(" - "):tparts[0]);
-    const fmt=(rel&&rel.formats&&rel.formats[0]&&rel.formats[0].name)||(Array.isArray(hit.format)?hit.format[0]:"")||"LP";
-    const year=(rel&&rel.year)||hit.year||"";
-    const label=(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].name)||(Array.isArray(hit.label)?hit.label[0]:"")||"";
-    const catno=(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].catno)||hit.catno||"";
-    const cover=hit.cover_image||((rel&&rel.images&&(rel.images.find(i=>i.type==="primary")||rel.images[0]))||{}).uri||"";
-    stopScan();openForm();
-    $("#f-artist").value=artist||"";$("#f-title").value=title||"";$("#f-year").value=year?String(year):"";
-    setFormat(fmt);$("#f-label").value=label||"";$("#f-cat").value=catno||"";
-    if(cover){editingArt=cover;renderArtChip()}
-    formDirty=true;toast("Found — review the details and save");
-  }catch(e){$("#scanMsg").textContent="Couldn't reach Discogs. Check your connection and try again."}
+  let found=null,reached=false;
+  try{found=await lookupBarcodeDiscogs(code);reached=true}catch(e){}
+  if(!found){
+    $("#scanMsg").textContent="Not on Discogs — checking MusicBrainz…";
+    try{found=await lookupBarcodeMusicBrainz(code);reached=true}catch(e){}
+  }
+  if(!found){
+    $("#scanMsg").textContent=reached
+      ?"No match for that barcode on Discogs or MusicBrainz. Enter the record manually below, or try again."
+      :"Couldn't reach the lookup service. Check your connection and try again.";
+    return;
+  }
+  stopScan();openForm();
+  $("#f-artist").value=found.artist||"";$("#f-title").value=found.title||"";$("#f-year").value=found.year?String(found.year):"";
+  setFormat(found.format);$("#f-label").value=found.label||"";$("#f-cat").value=found.catno||"";
+  if(found.cover){editingArt=found.cover;renderArtChip()}
+  formDirty=true;toast(found.via==="musicbrainz"?"Found on MusicBrainz — review and save":"Found — review the details and save");
 }
 
 /* form: don't silently throw away a filled-in record on an accidental dismiss */
