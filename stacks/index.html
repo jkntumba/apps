@@ -517,9 +517,10 @@ main{padding:4px 0 110px;min-height:60vh}
           <option>LP</option><option>2×LP</option><option>3×LP</option><option>EP</option><option>7"</option><option>10"</option><option>12" Single</option><option>Box set</option><option>Picture disc</option><option>Other</option></select></div>
         <div class="field"><label for="f-label">Label</label><input id="f-label" placeholder="Tamla"></div>
       </div>
+      <div class="field"><label for="f-variant">Pressing / variant</label><input id="f-variant" placeholder="180g · red /500"></div>
       <div class="row2">
-        <div class="field"><label for="f-variant">Pressing / variant</label><input id="f-variant" placeholder="180g · red /500"></div>
         <div class="field"><label for="f-cat">Catalog #</label><input id="f-cat" placeholder="T 319"></div>
+        <div class="field"><label for="f-barcode">Barcode</label><input id="f-barcode" inputmode="numeric" placeholder="e.g. 075992725217"></div>
       </div>
       <div class="row2">
         <div class="field"><label for="f-condMedia">Media grade</label><select id="f-condMedia">
@@ -613,6 +614,7 @@ main{padding:4px 0 110px;min-height:60vh}
         <span style="color:var(--ink-3)">Not in our catalogs — find it on the web, then add it by hand:</span><br>
         <a id="scanWebDiscogs" target="_blank" rel="noopener" class="btn" style="margin-top:8px">Search Discogs</a>
         <a id="scanWebGoogle" target="_blank" rel="noopener" class="btn" style="margin-top:8px">Search the web</a>
+        <button type="button" id="scanWebAdd" class="btn primary" style="margin-top:8px">Add it by hand</button>
       </div>
       <div class="row2" style="align-items:end">
         <div class="field" style="margin:0"><label for="scanInput">Barcode number</label><input id="scanInput" inputmode="numeric" placeholder="e.g. 075992725217"></div>
@@ -681,7 +683,7 @@ function normRec(r){if(!r||typeof r!=="object")return null;
   let tags=r.tags;if(typeof tags==="string")tags=tags.split(",").map(s=>s.trim()).filter(Boolean);if(!Array.isArray(tags))tags=[];
   tags=tags.map(t=>String(t)).filter(Boolean);
   return {id:r.id||uid(),artist:String(r.artist||""),title:String(r.title||""),year:String(r.year||""),
-    format:String(r.format||"LP"),label:String(r.label||""),variant:String(r.variant||""),catalog:String(r.catalog||""),
+    format:String(r.format||"LP"),label:String(r.label||""),variant:String(r.variant||""),catalog:String(r.catalog||""),barcode:String(r.barcode||""),
     condMedia:String(r.condMedia||""),condSleeve:String(r.condSleeve||""),paid:num(r.paid),value:num(r.value),
     tags,link:String(r.link||""),notes:String(r.notes||""),exclusive:!!r.exclusive,
     status:r.status==="owned"?"owned":"wishlist",photo:r.photo||null,art:r.art||null,
@@ -823,6 +825,7 @@ function openDetail(id){
     :`<div class="gen" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line-2);background:linear-gradient(150deg,${s.c1},${s.c2});color:${s.ink}"><div class="ring"></div><div class="ga">${esc(r.artist)}</div><div class="gt">${esc(r.title)}</div></div>`;
   const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.variant&&["Pressing",esc(r.variant)],
     r.label&&["Label",esc(r.label)],r.catalog&&["Catalog",`<span style="font-family:var(--mono)">${esc(r.catalog)}</span>`],
+    r.barcode&&["Barcode",`<span style="font-family:var(--mono)">${esc(r.barcode)}</span>`],
     r.condMedia&&["Media",esc(r.condMedia)],r.condSleeve&&["Sleeve",esc(r.condSleeve)],
     (r.paid!=null)&&["Paid",esc(money(r.paid))],(r.value!=null)&&["Est. value",esc(money(r.value))],
     (r.spins>0)&&["Played",`${r.spins}×${r.lastPlayed?` · ${esc(new Date(r.lastPlayed).toLocaleDateString())}`:""}`]].filter(Boolean);
@@ -896,7 +899,7 @@ function openForm(id){
   $("#deleteBtn").style.display=f?"":"none";
   const v=(s,val)=>$(s).value=val||"";
   v("#f-artist",f?.artist);v("#f-title",f?.title);v("#f-year",f?.year);$("#f-format").value=f?.format||"LP";
-  v("#f-label",f?.label);v("#f-variant",f?.variant);v("#f-cat",f?.catalog);v("#f-tags",(f?.tags||[]).join(", "));
+  v("#f-label",f?.label);v("#f-variant",f?.variant);v("#f-cat",f?.catalog);v("#f-barcode",f?.barcode);v("#f-tags",(f?.tags||[]).join(", "));
   $("#f-condMedia").value=f?.condMedia||"";$("#f-condSleeve").value=f?.condSleeve||"";
   v("#f-paid",f&&f.paid!=null?f.paid:"");v("#f-value",f&&f.value!=null?f.value:"");
   v("#f-link",f?.link);v("#f-notes",f?.notes);$("#f-exc").checked=!!f?.exclusive;
@@ -932,7 +935,7 @@ async function saveForm(){
   }
   const num=s=>{const n=parseFloat(s);return isFinite(n)?n:null};
   const rec={id:editId||uid(),artist,title,year:$("#f-year").value.trim(),format:$("#f-format").value,
-    label:$("#f-label").value.trim(),variant:$("#f-variant").value.trim(),catalog:$("#f-cat").value.trim(),
+    label:$("#f-label").value.trim(),variant:$("#f-variant").value.trim(),catalog:$("#f-cat").value.trim(),barcode:$("#f-barcode").value.trim(),
     condMedia:$("#f-condMedia").value,condSleeve:$("#f-condSleeve").value,paid:num($("#f-paid").value),value:num($("#f-value").value),
     tags:$("#f-tags").value.split(",").map(s=>s.trim()).filter(Boolean),link:$("#f-link").value.trim(),
     notes:$("#f-notes").value.trim(),exclusive:$("#f-exc").checked,status:curStatus(),photo:editingPhoto||null,art:editingArt||null,
@@ -1367,6 +1370,7 @@ async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(
       $("#scanMsg").textContent="No match on Discogs or MusicBrainz — likely a brand-new or small-label pressing not catalogued yet. Find it on the web, then add it by hand below.";
       $("#scanWebDiscogs").href="https://www.discogs.com/search/?q="+encodeURIComponent(code)+"&type=release";
       $("#scanWebGoogle").href="https://www.google.com/search?q="+encodeURIComponent(code+" vinyl record");
+      $("#scanWebAdd").onclick=()=>{stopScan();openForm();$("#f-barcode").value=code;formDirty=true};
       $("#scanWeb").hidden=false;
     }else{
       $("#scanMsg").textContent="Couldn't reach the lookup service. Check your connection and try again.";
@@ -1375,7 +1379,7 @@ async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(
   }
   stopScan();openForm();
   $("#f-artist").value=found.artist||"";$("#f-title").value=found.title||"";$("#f-year").value=found.year?String(found.year):"";
-  setFormat(found.format);$("#f-label").value=found.label||"";$("#f-cat").value=found.catno||"";
+  setFormat(found.format);$("#f-label").value=found.label||"";$("#f-cat").value=found.catno||"";$("#f-barcode").value=code;
   if(found.cover){editingArt=found.cover;renderArtChip()}
   formDirty=true;toast(found.via==="musicbrainz"?"Found on MusicBrainz — review and save":"Found — review the details and save");
 }
