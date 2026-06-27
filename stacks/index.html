@@ -507,6 +507,7 @@ main{padding:4px 0 110px;min-height:60vh}
       </div>
       <datalist id="artistList"></datalist>
       <div class="artchip">
+        <button type="button" class="btn" id="findDetailsBtn" title="Auto-fill year, label, format, cover &amp; pressing type from the artist + title above">🔎 Find details</button>
         <button type="button" class="btn" id="findArtBtn">🖼 Find cover art</button>
         <img id="artPreview" class="pv" alt="cover preview">
         <button type="button" class="btn" id="removeArtBtn" style="display:none">Remove art</button>
@@ -517,7 +518,11 @@ main{padding:4px 0 110px;min-height:60vh}
           <option>LP</option><option>2×LP</option><option>3×LP</option><option>EP</option><option>7"</option><option>10"</option><option>12" Single</option><option>Box set</option><option>Picture disc</option><option>Other</option></select></div>
         <div class="field"><label for="f-label">Label</label><input id="f-label" placeholder="Tamla"></div>
       </div>
-      <div class="field"><label for="f-variant">Pressing / variant</label><input id="f-variant" placeholder="180g · red /500"></div>
+      <div class="row2">
+        <div class="field"><label for="f-pressing">Pressing type</label><select id="f-pressing">
+          <option value="">Unknown</option><option>Original</option><option>Official reissue</option><option>Audiophile</option><option>PD / budget reissue</option><option>Bootleg</option></select></div>
+        <div class="field"><label for="f-variant">Pressing / variant</label><input id="f-variant" placeholder="180g · red /500"></div>
+      </div>
       <div class="row2">
         <div class="field"><label for="f-cat">Catalog #</label><input id="f-cat" placeholder="T 319"></div>
         <div class="field"><label for="f-barcode">Barcode</label><input id="f-barcode" inputmode="numeric" placeholder="e.g. 075992725217"></div>
@@ -683,7 +688,7 @@ function normRec(r){if(!r||typeof r!=="object")return null;
   let tags=r.tags;if(typeof tags==="string")tags=tags.split(",").map(s=>s.trim()).filter(Boolean);if(!Array.isArray(tags))tags=[];
   tags=tags.map(t=>String(t)).filter(Boolean);
   return {id:r.id||uid(),artist:String(r.artist||""),title:String(r.title||""),year:String(r.year||""),
-    format:String(r.format||"LP"),label:String(r.label||""),variant:String(r.variant||""),catalog:String(r.catalog||""),barcode:String(r.barcode||""),
+    format:String(r.format||"LP"),label:String(r.label||""),variant:String(r.variant||""),catalog:String(r.catalog||""),barcode:String(r.barcode||""),pressing:String(r.pressing||""),
     condMedia:String(r.condMedia||""),condSleeve:String(r.condSleeve||""),paid:num(r.paid),value:num(r.value),
     tags,link:String(r.link||""),notes:String(r.notes||""),exclusive:!!r.exclusive,
     status:r.status==="owned"?"owned":"wishlist",photo:r.photo||null,art:r.art||null,
@@ -823,7 +828,7 @@ function openDetail(id){
   const _src=r.photo||r.art;
   const sleeveArt=_src?`<img src="${esc(_src)}" loading="lazy" decoding="async" data-cover="${r.id}" alt="" title="Tap to enlarge" style="width:100%;border-radius:8px;border:1px solid var(--line-2)">`
     :`<div class="gen" style="aspect-ratio:1;border-radius:8px;border:1px solid var(--line-2);background:linear-gradient(150deg,${s.c1},${s.c2});color:${s.ink}"><div class="ring"></div><div class="ga">${esc(r.artist)}</div><div class="gt">${esc(r.title)}</div></div>`;
-  const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.variant&&["Pressing",esc(r.variant)],
+  const kv=[r.year&&["Year",esc(r.year)],["Format",esc(r.format||"LP")],r.pressing&&["Pressing type",esc(r.pressing)],r.variant&&["Pressing",esc(r.variant)],
     r.label&&["Label",esc(r.label)],r.catalog&&["Catalog",`<span style="font-family:var(--mono)">${esc(r.catalog)}</span>`],
     r.barcode&&["Barcode",`<span style="font-family:var(--mono)">${esc(r.barcode)}</span>`],
     r.condMedia&&["Media",esc(r.condMedia)],r.condSleeve&&["Sleeve",esc(r.condSleeve)],
@@ -899,7 +904,7 @@ function openForm(id){
   $("#deleteBtn").style.display=f?"":"none";
   const v=(s,val)=>$(s).value=val||"";
   v("#f-artist",f?.artist);v("#f-title",f?.title);v("#f-year",f?.year);$("#f-format").value=f?.format||"LP";
-  v("#f-label",f?.label);v("#f-variant",f?.variant);v("#f-cat",f?.catalog);v("#f-barcode",f?.barcode);v("#f-tags",(f?.tags||[]).join(", "));
+  v("#f-label",f?.label);v("#f-variant",f?.variant);v("#f-cat",f?.catalog);v("#f-barcode",f?.barcode);v("#f-tags",(f?.tags||[]).join(", "));$("#f-pressing").value=f?.pressing||"";
   $("#f-condMedia").value=f?.condMedia||"";$("#f-condSleeve").value=f?.condSleeve||"";
   v("#f-paid",f&&f.paid!=null?f.paid:"");v("#f-value",f&&f.value!=null?f.value:"");
   v("#f-link",f?.link);v("#f-notes",f?.notes);$("#f-exc").checked=!!f?.exclusive;
@@ -935,7 +940,7 @@ async function saveForm(){
   }
   const num=s=>{const n=parseFloat(s);return isFinite(n)?n:null};
   const rec={id:editId||uid(),artist,title,year:$("#f-year").value.trim(),format:$("#f-format").value,
-    label:$("#f-label").value.trim(),variant:$("#f-variant").value.trim(),catalog:$("#f-cat").value.trim(),barcode:$("#f-barcode").value.trim(),
+    label:$("#f-label").value.trim(),variant:$("#f-variant").value.trim(),catalog:$("#f-cat").value.trim(),barcode:$("#f-barcode").value.trim(),pressing:$("#f-pressing").value,
     condMedia:$("#f-condMedia").value,condSleeve:$("#f-condSleeve").value,paid:num($("#f-paid").value),value:num($("#f-value").value),
     tags:$("#f-tags").value.split(",").map(s=>s.trim()).filter(Boolean),link:$("#f-link").value.trim(),
     notes:$("#f-notes").value.trim(),exclusive:$("#f-exc").checked,status:curStatus(),photo:editingPhoto||null,art:editingArt||null,
@@ -1168,6 +1173,27 @@ async function findArtForForm(){
   const b=$("#findArtBtn"),old=b.innerHTML;b.innerHTML='<span class="spin-mini"></span> Searching…';b.disabled=true;
   try{const {url}=await findCover(a,t);if(url){editingArt=url;renderArtChip();toast("Cover found")}else toast("No cover art found")}
   catch(e){toast("Couldn't reach the art service")}finally{b.innerHTML=old;b.disabled=false}}
+/* auto-fill year/label/format/cover/pressing-type from the typed artist+title — works even when
+   a barcode isn't catalogued anywhere, since the album itself is searchable by name. Only fills
+   empty fields, so it never clobbers what you've already entered. */
+async function autofillFromText(){
+  const a=$("#f-artist").value.trim(),t=$("#f-title").value.trim();
+  if(!a&&!t){toast("Type an artist or title first");return}
+  const b=$("#findDetailsBtn"),old=b.innerHTML;b.innerHTML='<span class="spin-mini"></span> Searching…';b.disabled=true;
+  let filled=0;
+  try{
+    const q=[a&&`artist:"${a.replace(/["\\]/g,"")}"`,t&&`release:"${t.replace(/["\\]/g,"")}"`].filter(Boolean).join(" AND ");
+    let m=null;try{m=await mbQuery(q)}catch(e){}
+    if(m){
+      const set=(sel,val)=>{if(val&&!$(sel).value.trim()){$(sel).value=val;filled++}};
+      set("#f-year",m.year);set("#f-label",m.label);set("#f-cat",m.catno);
+      if(m.format&&$("#f-format").value==="LP"){const before=$("#f-format").value;setFormat(m.format);if($("#f-format").value!==before)filled++}
+      if(m.pressing&&!$("#f-pressing").value){$("#f-pressing").value=m.pressing;filled++}
+    }
+    if(!editingArt){try{const {url}=await findCover(a,t);if(url){editingArt=url;renderArtChip();filled++}}catch(e){}}
+    formDirty=true;
+    toast(filled?`Filled ${filled} field${filled>1?"s":""} — review & save`:(m?"Details already filled in":"No details found — check the exact artist & title"));
+  }finally{b.innerHTML=old;b.disabled=false}}
 async function fetchArtBulk(){
   const list=records.filter(r=>!r.photo&&!r.art&&(r.artist||r.title));
   if(!list.length){toast("Every record already has artwork");return}
@@ -1311,6 +1337,15 @@ function setFormat(fmt){const sel=$("#f-format");let f=String(fmt||"").trim();
    vinyl picked up on Amazon / in person still auto-fills. Each helper returns a normalized
    record {artist,title,year,format,label,catno,cover,via} or null (no match); a thrown error
    means the service was unreachable, which lets the next source still get a shot. */
+/* best-guess pressing type from catalog metadata (label name + Discogs format descriptors) —
+   a suggestion the user can correct, never an assertion. Empty string = leave as "Unknown". */
+function guessPressingType(m){
+  const hay=[m.label,(m.descs||[]).join(" "),m.notes,m.title].filter(Boolean).join("  ").toLowerCase();
+  if(/mobile fidelity|\bmofi\b|analogue productions|acoustic sounds|music matters|speakers corner|pure pleasure|impex records|intervention records|original recordings group|electric recording|analogphonic|one[- ]step|half[- ]speed|audiophile/.test(hay))return "Audiophile";
+  if(/\bdol\b|wax\s?time|not now music|second records|bellevue|doxy\b|hallmark|glamourama|vinyl passion|20th century masterworks|ermitage|soul jam|american jazz classics|jazz ?wax|poll winners|essential jazz classics|state records|public domain/.test(hay))return "PD / budget reissue";
+  if(/reissue|re-issue|repress|re-press|remaster|re-master|anniversary|re-?edition|\bre-?release\b/.test(hay))return "Official reissue";
+  return "";
+}
 async function lookupBarcodeDiscogs(code){
   // works with or without a token — a token lifts the rate limit and improves matching, but
   // the barcode search responds keyless too, so don't skip it for token-less users
@@ -1320,19 +1355,23 @@ async function lookupBarcodeDiscogs(code){
   if(!hit)return null;
   let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null)}catch(e){}
   const tparts=(hit.title||"").split(" - ");
+  const artist=rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:"");
+  const title=rel?rel.title:(tparts.length>1?tparts.slice(1).join(" - "):tparts[0]);
+  const label=(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].name)||(Array.isArray(hit.label)?hit.label[0]:"")||"";
+  const descs=[];if(rel&&rel.formats)rel.formats.forEach(f=>{if(f.name)descs.push(f.name);(f.descriptions||[]).forEach(d=>descs.push(d));if(f.text)descs.push(f.text)});
   return {
-    artist:rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:""),
-    title:rel?rel.title:(tparts.length>1?tparts.slice(1).join(" - "):tparts[0]),
+    artist,title,
     year:(rel&&rel.year)||hit.year||"",
     format:(rel&&rel.formats&&rel.formats[0]&&rel.formats[0].name)||(Array.isArray(hit.format)?hit.format[0]:"")||"LP",
-    label:(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].name)||(Array.isArray(hit.label)?hit.label[0]:"")||"",
+    label,
     catno:(rel&&rel.labels&&rel.labels[0]&&rel.labels[0].catno)||hit.catno||"",
     cover:hit.cover_image||((rel&&rel.images&&(rel.images.find(i=>i.type==="primary")||rel.images[0]))||{}).uri||"",
+    pressing:guessPressingType({label,descs,notes:rel&&rel.notes,title}),
     via:"discogs"};
 }
-async function lookupBarcodeMusicBrainz(code){
-  // free, keyless, CORS-enabled; physical releases are indexed by their printed barcode
-  const d=await fetch(`https://musicbrainz.org/ws/2/release?query=barcode:${encodeURIComponent(code)}&fmt=json&limit=12`).then(x=>x.ok?x.json():null);
+/* generic MusicBrainz release search (free, keyless, CORS) — used for barcode AND text lookups */
+async function mbQuery(query){
+  const d=await fetch(`https://musicbrainz.org/ws/2/release?query=${encodeURIComponent(query)}&fmt=json&limit=12`).then(x=>x.ok?x.json():null);
   const rels=(d&&d.releases)||[];
   if(!rels.length)return null;
   const isVinyl=r=>(r.media||[]).some(m=>/vinyl|lp/i.test(m.format||""));
@@ -1340,15 +1379,17 @@ async function lookupBarcodeMusicBrainz(code){
   const r=rels[0];
   const artist=(r["artist-credit"]||[]).map(a=>(a.name||(a.artist&&a.artist.name)||"")+(a.joinphrase||"")).join("").trim();
   const li=(r["label-info"]||[])[0]||{};
+  const label=(li.label&&li.label.name)||"";
   const vinyl=(r.media||[]).filter(m=>/vinyl|lp/i.test(m.format||"")).length;
+  const title=r.title||"";
   const out={
-    artist,
-    title:r.title||"",
+    artist,title,
     year:(r.date||"").slice(0,4),
     format:vinyl>1?vinyl+"×LP":(((r.media||[])[0])||{}).format||"",
-    label:(li.label&&li.label.name)||"",
+    label,
     catno:li["catalog-number"]||"",
     cover:"",
+    pressing:guessPressingType({label,title,notes:r.disambiguation}),
     via:"musicbrainz"};
   // cover from the Cover Art Archive (404s when a release has no art) — verify before keeping it
   const tryCover=async u=>{try{return (await fetch(u)).ok?u:""}catch(e){return ""}};
@@ -1357,6 +1398,7 @@ async function lookupBarcodeMusicBrainz(code){
     out.cover=await tryCover(`https://coverartarchive.org/release-group/${r["release-group"].id}/front-500`);
   return out;
 }
+async function lookupBarcodeMusicBrainz(code){return mbQuery("barcode:"+code)}
 async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(!code){toast("Enter a barcode number");return}
   $("#scanMsg").textContent="Looking up "+code+"…";$("#scanWeb").hidden=true;
   let found=null,reached=false;
@@ -1380,6 +1422,7 @@ async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(
   stopScan();openForm();
   $("#f-artist").value=found.artist||"";$("#f-title").value=found.title||"";$("#f-year").value=found.year?String(found.year):"";
   setFormat(found.format);$("#f-label").value=found.label||"";$("#f-cat").value=found.catno||"";$("#f-barcode").value=code;
+  $("#f-pressing").value=found.pressing||"";
   if(found.cover){editingArt=found.cover;renderArtChip()}
   formDirty=true;toast(found.via==="musicbrainz"?"Found on MusicBrainz — review and save":"Found — review the details and save");
 }
@@ -1427,7 +1470,7 @@ $("#tabs").onclick=e=>{const b=e.target.closest(".tab");if(!b)return;state.artis
 $("#exportBtn").onclick=exportLib;$("#importBtn").onclick=()=>$("#importFile").click();
 $("#importFile").onchange=e=>{if(e.target.files[0])importLib(e.target.files[0]);e.target.value=""};
 $("#seedBtn").onclick=seed;
-$("#findArtBtn").onclick=findArtForForm;
+$("#findArtBtn").onclick=findArtForForm;$("#findDetailsBtn").onclick=autofillFromText;
 $("#removeArtBtn").onclick=()=>{editingArt=null;formDirty=true;renderArtChip();};
 $("#artBulkBtn").onclick=fetchArtBulk;
 $("#bulkCancelBtn").onclick=()=>{bulkCancel=true;$("#bulkCancelBtn").textContent="Stopping…"};
