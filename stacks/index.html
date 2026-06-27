@@ -609,6 +609,11 @@ main{padding:4px 0 110px;min-height:60vh}
     <div class="mbody">
       <div class="scanwrap" id="scanWrap" style="display:none"><video id="scanVideo" playsinline muted></video><div class="reticle"></div></div>
       <p id="scanMsg" style="margin:0 0 14px;color:var(--ink-2);font-size:13.5px;line-height:1.5">Point the camera at the barcode on the record's back cover. No camera? Type the number below.</p>
+      <div id="scanWeb" hidden style="margin:0 0 14px;font-size:13px;line-height:1.6">
+        <span style="color:var(--ink-3)">Not in our catalogs — find it on the web, then add it by hand:</span><br>
+        <a id="scanWebDiscogs" target="_blank" rel="noopener" class="btn" style="margin-top:8px">Search Discogs</a>
+        <a id="scanWebGoogle" target="_blank" rel="noopener" class="btn" style="margin-top:8px">Search the web</a>
+      </div>
       <div class="row2" style="align-items:end">
         <div class="field" style="margin:0"><label for="scanInput">Barcode number</label><input id="scanInput" inputmode="numeric" placeholder="e.g. 075992725217"></div>
         <button class="btn primary" id="scanLookup" style="margin-bottom:0">Look up</button>
@@ -1254,7 +1259,7 @@ function openDuplicates(){
 
 /* ---- barcode scan (BarcodeDetector over camera; manual entry fallback) ---- */
 let _scanStream=null,_scanRAF=0,_scanDet=null;
-function openScan(){$("#scanInput").value="";$("#scanMsg").textContent="Point the camera at the barcode on the back cover. No camera? Type the number below.";show("#scanScrim");startScan()}
+function openScan(){$("#scanInput").value="";$("#scanWeb").hidden=true;$("#scanMsg").textContent="Point the camera at the barcode on the back cover. No camera? Type the number below.";show("#scanScrim");startScan()}
 /* resolve a BarcodeDetector — native if present, else a free ZXing-based ponyfill (loaded on demand) */
 async function getBarcodeDetector(){
   if("BarcodeDetector"in window)return window.BarcodeDetector;
@@ -1304,12 +1309,13 @@ function setFormat(fmt){const sel=$("#f-format");let f=String(fmt||"").trim();
    record {artist,title,year,format,label,catno,cover,via} or null (no match); a thrown error
    means the service was unreachable, which lets the next source still get a shot. */
 async function lookupBarcodeDiscogs(code){
-  if(!settings.discogsToken)return null; // Discogs search requires auth — skip cleanly when token-less
-  const tk="&token="+encodeURIComponent(settings.discogsToken);
+  // works with or without a token — a token lifts the rate limit and improves matching, but
+  // the barcode search responds keyless too, so don't skip it for token-less users
+  const tk=settings.discogsToken?("&token="+encodeURIComponent(settings.discogsToken)):"";
   const s=await fetch(`https://api.discogs.com/database/search?barcode=${encodeURIComponent(code)}&type=release${tk}`).then(x=>x.ok?x.json():null);
   const hit=((s&&s.results)||[])[0];
   if(!hit)return null;
-  let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}?${tk.slice(1)}`).then(x=>x.ok?x.json():null)}catch(e){}
+  let rel=null;try{rel=await fetch(`https://api.discogs.com/releases/${hit.id}${tk?("?"+tk.slice(1)):""}`).then(x=>x.ok?x.json():null)}catch(e){}
   const tparts=(hit.title||"").split(" - ");
   return {
     artist:rel&&rel.artists?rel.artists.map(a=>a.name).join(", ").replace(/\s*\(\d+\)/g,""):(tparts.length>1?tparts[0]:""),
@@ -1349,7 +1355,7 @@ async function lookupBarcodeMusicBrainz(code){
   return out;
 }
 async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(!code){toast("Enter a barcode number");return}
-  $("#scanMsg").textContent="Looking up "+code+"…";
+  $("#scanMsg").textContent="Looking up "+code+"…";$("#scanWeb").hidden=true;
   let found=null,reached=false;
   try{found=await lookupBarcodeDiscogs(code);reached=true}catch(e){}
   if(!found){
@@ -1357,9 +1363,14 @@ async function lookupBarcode(code){code=(code||"").trim().replace(/\s+/g,"");if(
     try{found=await lookupBarcodeMusicBrainz(code);reached=true}catch(e){}
   }
   if(!found){
-    $("#scanMsg").textContent=reached
-      ?"No match for that barcode on Discogs or MusicBrainz. Enter the record manually below, or try again."
-      :"Couldn't reach the lookup service. Check your connection and try again.";
+    if(reached){
+      $("#scanMsg").textContent="No match on Discogs or MusicBrainz — likely a brand-new or small-label pressing not catalogued yet. Find it on the web, then add it by hand below.";
+      $("#scanWebDiscogs").href="https://www.discogs.com/search/?q="+encodeURIComponent(code)+"&type=release";
+      $("#scanWebGoogle").href="https://www.google.com/search?q="+encodeURIComponent(code+" vinyl record");
+      $("#scanWeb").hidden=false;
+    }else{
+      $("#scanMsg").textContent="Couldn't reach the lookup service. Check your connection and try again.";
+    }
     return;
   }
   stopScan();openForm();

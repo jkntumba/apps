@@ -1,5 +1,5 @@
 /* Stacks service worker — network-first app shell + runtime cover-image cache (offline-friendly) */
-const CACHE = "stacks-v7", IMG_CACHE = "stacks-img-v1", IMG_CAP = 600;
+const CACHE = "stacks-v8", IMG_CACHE = "stacks-img-v1", IMG_CAP = 600;
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "icon-512-mask.png"];
 const IMG_HOSTS = ["i.discogs.com", "mzstatic.com", "coverartarchive.org"]; // album-cover CDNs (Discogs + iTunes + MusicBrainz/Cover Art Archive)
 
